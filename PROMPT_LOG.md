@@ -31,3 +31,13 @@ Format:
 **Notes:** Repo was empty (no package.json). Next.js 14 scaffold bootstrapped via create-next-app in temp dir due to capital-letter directory name restriction.
 
 ---
+
+### [2026-05-07 16:30] — Path-scoped CLAUDE.md files for key directories
+
+**Prompt:** Before Milestone 1, create path-scoped CLAUDE.md files for src/app/, src/components/, src/lib/, and prisma/. Each file should define layer-specific rules covering: server/client boundaries, route conventions, component size, data fetching discipline, hashing split, nutrition purity, DB rules, seed constraints. Files must complement root CLAUDE.md without repeating it. Keep each under 80 lines.
+
+**Files affected:** src/app/CLAUDE.md, src/components/CLAUDE.md, src/lib/CLAUDE.md, prisma/CLAUDE.md
+
+**Notes:** Good discipline prompt — scoped rules prevent context drift during multi-step code generation. No application code written.
+
+---
