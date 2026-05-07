@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pizza3.14 🍕
 
-## Getting Started
+Interactive tabletop pizza ordering system. Customers build pizzas by dragging ingredient layers onto a canvas, track live order status, and submit feedback stored in a hash-chain ledger.
 
-First, run the development server:
+## Quick Start
 
 ```bash
+# 1. Clone and install
+git clone https://github.com/ashircgpt/hackathon-2026-05-Ali-Ashir.git
+cd hackathon-2026-05-Ali-Ashir
+npm install
+
+# 2. Set up environment
+cp .env.example .env
+# Fill in .env with your Supabase connection string and passphrases
+
+# 3. Run dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Routes
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| URL | Who | Notes |
+|---|---|---|
+| `/table/1` | Customer | Pizza builder (default table) |
+| `/kitchen` | Staff | Order board — requires kitchen passphrase |
+| `/admin` | Admin | Dashboard — requires admin passphrase |
+| `/login` | All | Passphrase login for kitchen/admin |
+| `/api/health` | Anyone | Health check endpoint |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+Copy `.env.example` to `.env` (never commit `.env`):
 
-To learn more about Next.js, take a look at the following resources:
+```env
+DATABASE_URL=postgresql://...     # Supabase connection string
+AUTH_SECRET=<32-byte hex>         # openssl rand -hex 32
+KITCHEN_PASSPHRASE=kitchen_demo
+ADMIN_PASSPHRASE=admin_demo
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Uses **Supabase free tier (PostgreSQL)** with Prisma ORM.
 
-## Deploy on Vercel
+```bash
+npm run db:migrate   # run migrations
+npm run db:seed      # load synthetic seed data
+npm run db:reset     # wipe and re-seed (local dev only)
+npm run db:studio    # Prisma Studio at :5555
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+SQLite fallback (no infra): change `provider` in `prisma/schema.prisma` to `sqlite` and set `DATABASE_URL=file:./prisma/dev.db`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tech Stack
+
+- **Next.js 14** — App Router, TypeScript strict mode
+- **Prisma** — ORM + migrations
+- **Supabase** — PostgreSQL (free tier)
+- **shadcn/ui** + **Tailwind CSS** — UI components
+- **@dnd-kit/core** — drag-and-drop pizza builder
+- **Server-Sent Events** — live order status
+
+## Docs
+
+- [`SPEC.md`](SPEC.md) — Full product specification
+- [`CLAUDE.md`](CLAUDE.md) — Codebase orientation for AI assistants
+- [`docs/ARCHITECTURE_OVERVIEW.md`](docs/ARCHITECTURE_OVERVIEW.md) — System diagrams
+- [`docs/TECHNICAL_DECISIONS.md`](docs/TECHNICAL_DECISIONS.md) — Architecture decision records
+- [`docs/POST_HACKATHON_ROADMAP.md`](docs/POST_HACKATHON_ROADMAP.md) — Future hardening items

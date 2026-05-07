@@ -41,3 +41,13 @@ Format:
 **Notes:** Good discipline prompt — scoped rules prevent context drift during multi-step code generation. No application code written.
 
 ---
+
+### [2026-05-07 17:00] — Milestone 1: App Skeleton and Core Structure
+
+**Prompt:** Create clean scalable app structure with shadcn/ui, placeholder routes (/, /table/[tableId], /kitchen, /admin/*, /login), shared dark futuristic theme, reusable UI primitives (PageContainer, SectionCard, StatusBadge, StatCard), admin sidebar/header layout, health endpoint, src/lib and src/types stubs.
+
+**Files affected:** tailwind.config.ts, globals.css, components.json, src/app/layout.tsx, src/app/page.tsx, src/types/index.ts, src/lib/utils.ts + prisma.ts + hash.ts + hash-browser.ts + nutrition.ts, src/middleware.ts, src/components/ui/* (Button Badge Card Input Textarea Label Tabs Separator), src/components/PageContainer.tsx + SectionCard.tsx + StatusBadge.tsx + StatCard.tsx, src/components/layout/AdminSidebar.tsx + AdminHeader.tsx, all page routes (9), src/app/api/health/route.ts, README.md
+
+**Notes:** Build clean on first pass after fixing two empty-interface ESLint errors. All 12 routes render. No business logic, no DB, no realtime yet.
+
+---

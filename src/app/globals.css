@@ -2,26 +2,85 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Pizza3.14 — futuristic dark tabletop theme (always dark) */
+    --background: 240 10% 4%;
+    --foreground: 240 5% 92%;
+
+    --card: 240 8% 7%;
+    --card-foreground: 240 5% 92%;
+
+    --popover: 240 8% 7%;
+    --popover-foreground: 240 5% 92%;
+
+    /* Pizza orange as primary */
+    --primary: 24 95% 53%;
+    --primary-foreground: 240 10% 4%;
+
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 240 5% 78%;
+
+    --muted: 240 6% 13%;
+    --muted-foreground: 240 4% 46%;
+
+    --accent: 240 6% 16%;
+    --accent-foreground: 240 5% 92%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 6% 16%;
+    --input: 240 6% 16%;
+    --ring: 24 95% 53%;
+
+    --radius: 0.5rem;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Scrollbar — dark minimal */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Subtle glow on primary-colored elements */
+  .glow-primary {
+    box-shadow: 0 0 12px hsl(24 95% 53% / 0.25);
+  }
+
+  /* Subtle scanline texture for futuristic feel */
+  .scanlines {
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      hsl(240 10% 4% / 0.3) 2px,
+      hsl(240 10% 4% / 0.3) 4px
+    );
   }
 }
