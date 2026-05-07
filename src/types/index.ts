@@ -59,13 +59,22 @@ export interface NutritionTotals {
 }
 
 // API response shapes
-export interface ApiError {
-  error: string;
+export interface ApiSuccess<T> {
+  success: true;
+  data: T;
 }
+
+export interface ApiFailure {
+  success: false;
+  message: string;
+  errors: string[];
+}
+
+export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
 export interface CreateOrderPayload {
   tableId: number;
-  menuItemIds: number[];
+  layers: number[]; // array of menuItem IDs
 }
 
 export interface SubmitFeedbackPayload {
