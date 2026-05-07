@@ -7,7 +7,7 @@ export type LayerType = "BASE" | "SAUCE" | "CHEESE" | "TOPPING";
 export interface MenuItem {
   id: number;
   name: string;
-  type: LayerType;
+  layerType: LayerType;
   imageUrl: string;
   price: number;
   calories: number;
@@ -15,6 +15,7 @@ export interface MenuItem {
   fats: number;
   carbs: number;
   sortOrder: number;
+  isAvailable: boolean;
   createdAt: string;
 }
 

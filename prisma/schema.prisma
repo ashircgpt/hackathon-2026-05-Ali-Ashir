@@ -1,0 +1,91 @@
+// Pizza3.14 — Prisma schema
+// Default: Supabase PostgreSQL (free tier)
+// Fallback: change provider to "sqlite" and DATABASE_URL to "file:./prisma/dev.db"
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum LayerType {
+  BASE
+  SAUCE
+  CHEESE
+  TOPPING
+}
+
+enum OrderStatus {
+  NEW
+  PREPARING
+  BAKING
+  READY
+  SERVED
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model MenuItem {
+  id          Int          @id @default(autoincrement())
+  name        String
+  layerType   LayerType
+  imageUrl    String
+  price       Float
+  calories    Int
+  protein     Float
+  fats        Float
+  carbs       Float
+  sortOrder   Int          @default(0)
+  isAvailable Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+
+  layers      OrderLayer[]
+}
+
+model Order {
+  id         Int          @id @default(autoincrement())
+  tableId    Int
+  status     OrderStatus  @default(NEW)
+  totalPrice Float
+  totalCals  Int
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  layers     OrderLayer[]
+  feedback   Feedback?
+}
+
+model OrderLayer {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  menuItemId Int
+  // Server-assigned: BASE=0, SAUCE=1, CHEESE=2, TOPPING=3+n
+  zIndex     Int
+  createdAt  DateTime @default(now())
+
+  order      Order    @relation(fields: [orderId],    references: [id])
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+// Append-only — never UPDATE or DELETE rows in this table.
+model Feedback {
+  id          Int      @id @default(autoincrement())
+  orderId     Int      @unique
+  content     String
+  contentHash String   // SHA256(content)
+  prevHash    String   // blockHash of previous block, or "0" for genesis
+  timestamp   DateTime // ISO 8601 UTC — deterministic block timestamp
+  blockHash   String   // SHA256(prevHash + timestamp.toISOString() + contentHash)
+  createdAt   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id])
+}
