@@ -71,3 +71,23 @@ Format:
 **Notes:** Documentation-only task. No application code changed. ADR-007 (GSAP) and ADR-008 (Socket.io) added. ADR-002 (SSE) marked superseded. Notion page updated to reflect new vision. Model: Sonnet.
 
 ---
+
+### [2026-05-08] — Phase 0: Repo stabilization and baseline commit
+
+**Prompt:** Full M6-M14 roadmap pasted. User requested to remove irrelevant code, stabilize the repo to a clean baseline, and get a single clean commit of all M4+M5 uncommitted work before starting new milestones.
+
+**Files affected:** .gitignore (added .claude/), SPEC.md, CLAUDE.md, PROMPT_LOG.md, docs/ARCHITECTURE_OVERVIEW.md, docs/TECHNICAL_DECISIONS.md, src/components/pizza-builder/* (PizzaCanvas, IngredientOrbit, NutritionPanel, BillPanel, CombosBanner, SelectedLayersPanel, OrderSummary, PizzaBuilder), src/app/page.tsx
+
+**Notes:** Commit ac2fd19. Phase 0 plan created and approved in plan mode. Cleaned up stale SSE references from src/app/CLAUDE.md. All M4+M5 work committed. Model: Sonnet.
+
+---
+
+### [2026-05-08] — Backend build: complete API layer + Socket.io + Swagger
+
+**Prompt:** "First I want you to plan and build the backend first — build all the needed APIs which would be needed by frontend's all three modules. Also add Swagger implementation to the APIs as well."
+
+**Files affected:** server.ts (new), src/lib/socket-server.ts (new), src/lib/socket-client.ts (new), src/lib/combo.ts (new), src/lib/swagger.ts (new), src/middleware.ts (upgraded cookie validation), src/app/api/auth/login/route.ts (new), src/app/api/auth/logout/route.ts (new), src/app/api/menu/route.ts (Swagger added), src/app/api/menu/famous-combo/route.ts (new), src/app/api/admin/menu/route.ts (new), src/app/api/admin/menu/[id]/route.ts (new), src/app/api/orders/route.ts (filters + Socket emit + Swagger), src/app/api/orders/[id]/route.ts (Swagger), src/app/api/orders/[id]/status/route.ts (Socket emits + Swagger), src/app/api/feedback/route.ts (Swagger), src/app/api/admin/feedback/route.ts (Swagger), src/app/api/admin/stats/route.ts (today stats + hourly breakdown + Swagger), src/app/api-doc/page.tsx (new), src/app/api-doc/react-swagger.tsx (new), package.json (dev/start scripts → tsx server.ts)
+
+**Notes:** Commit 36fdab6. Custom server.ts approach chosen for Socket.io persistence (incompatible with Vercel serverless — targets Railway/Render). Middleware upgraded to Web Crypto API (Edge-compatible SHA-256). `computeTopCombo()` extracted to lib/combo.ts to avoid duplication. All Socket emit calls wrapped in try/catch for graceful degradation. Model: Sonnet.
+
+---
