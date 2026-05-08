@@ -39,3 +39,6 @@ prisma/dev.db-journal
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code local settings (never commit)
+.claude/

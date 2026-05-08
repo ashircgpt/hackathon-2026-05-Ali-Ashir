@@ -21,19 +21,17 @@ Architecture Decision Records (ADRs) for key choices made during the hackathon.
 
 ---
 
-## ADR-002: Server-Sent Events (SSE) for Real-time Status
+## ADR-002: Server-Sent Events (SSE) for Real-time Status ⚠️ SUPERSEDED
 
-**Status:** Accepted (with documented fallback)
+**Status:** Superseded by ADR-008 (Socket.io)
 
 **Context:** Customers need to see order status updates without polling manually. Options: WebSockets, SSE, long-polling, short-polling.
 
-**Decision:** Use SSE via Next.js `ReadableStream` route handler with `force-dynamic`. No additional infrastructure.
+**Original Decision:** Use SSE via Next.js `ReadableStream` route handler with `force-dynamic`. No additional infrastructure.
 
-**Consequences:**
-- (+) Works in Next.js App Router with no extra server
-- (+) Simpler than WebSockets (one-way, no handshake)
-- (-) Vercel free tier has 60 s timeout on serverless functions
-- **Fallback:** If SSE is unstable, switch customer page to 3–5 s `setInterval` + `router.refresh()`. Document chosen approach in CLAUDE.md.
+**Why superseded:** SSE is one-way (server → client only) and cannot push new orders to the kitchen board without a separate SSE stream per kitchen tab. Socket.io's room-based bidirectional model handles both customer table updates and kitchen board live updates with a single shared server instance, eliminating the 60 s Vercel timeout concern via persistent WebSocket connections.
+
+**See ADR-008** for the replacement decision.
 
 ---
 
@@ -99,3 +97,42 @@ Architecture Decision Records (ADRs) for key choices made during the hackathon.
 - (+) Single source of truth; client cannot desync render order
 - (+) Works correctly even if client sends layers in wrong order
 - (-) Slight complexity in seed data (must set zIndex manually)
+
+---
+
+## ADR-007: GSAP for Animations
+
+**Status:** Accepted
+
+**Context:** The new table UI requires orchestrated animations: ingredient fly-in from orbit ring to canvas, layer pop-in stacking effects, orbit ring pulse on hover, combo banner slide-in/out, waiting mode fade transition, and order completion celebration. CSS keyframes alone cannot handle complex, physics-based, chained sequences reliably across browsers.
+
+**Decision:** Use GSAP (GreenSock Animation Platform) for all pizza canvas animations, ingredient transitions, and UI state celebrations. Tailwind `animate-*` utilities are retained only for non-GSAP elements (e.g., loading skeletons, simple button hovers).
+
+**Consequences:**
+- (+) Physics-based spring easing (`back.out`, `elastic.out`) not available in CSS
+- (+) Timeline control for sequenced multi-element animations
+- (+) `gsap.context()` provides clean React integration with automatic cleanup
+- (+) Better performance than CSS for transform-heavy animations (uses WAAPI under the hood)
+- (-) Additional dependency (~30 KB gzipped for core)
+- (-) Must not mix with Tailwind `animate-*` on the same element (conflicts)
+- **Gotcha:** Always call `ctx.revert()` or `tween.kill()` in `useEffect` cleanup to prevent memory leaks.
+
+---
+
+## ADR-008: Socket.io Replacing SSE for Real-time
+
+**Status:** Accepted (supersedes ADR-002)
+
+**Context:** The expanded product vision requires two-way real-time communication: (1) kitchen status advances must push to the customer table instantly, and (2) new customer orders must appear on the kitchen board without refresh. SSE (ADR-002) only supports server-to-client push on a single connection per client, requiring separate streams for each use case and suffering from Vercel's 60 s serverless timeout.
+
+**Decision:** Use Socket.io with room-based messaging. Kitchen joins room `'kitchen'`; each customer table joins room `table-${tableId}`. Status advances emit `'order-status-update'` to the customer's room; new orders emit `'order-new'` to the kitchen room.
+
+**Consequences:**
+- (+) Bidirectional — one connection handles all push scenarios
+- (+) Room-based — targeted delivery to customer or kitchen without broadcasting to everyone
+- (+) Handles reconnection and transport fallback automatically
+- (+) New orders appear on kitchen board in real time (not possible with per-order SSE)
+- (-) Requires a persistent Node.js server process — not compatible with pure Vercel serverless by default
+- (-) Larger dependency footprint than SSE (~40 KB gzipped)
+- **Deployment note:** Socket.io requires attaching to the underlying `http.Server`. On Vercel, use a custom server (`server.ts`) or the `instrumentation.ts` hook. If this proves impractical on Vercel's infrastructure, fall back to the documented polling strategy (3–5 s `setInterval`) and document the decision here.
+- **Fallback:** 3–5 s client polling on `GET /api/orders/[id]` if Socket.io connection fails.

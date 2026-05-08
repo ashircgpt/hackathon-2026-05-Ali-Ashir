@@ -5,7 +5,7 @@
 ```
 Browser (Customer)       Browser (Kitchen)     Browser (Admin)
        |                        |                      |
-  HTTP + SSE              HTTP polling             HTTP
+  HTTP + Socket.io        HTTP + Socket.io          HTTP
        |                        |                      |
        +------------------------+----------------------+
                                 |
@@ -25,12 +25,14 @@ Browser (Customer)       Browser (Kitchen)     Browser (Admin)
                     |   /api/orders/[id]    |
                     |   /api/orders/[id]/   |
                     |     status            |
-                    |   /api/orders/        |
-                    |     stream/[id] (SSE) |
                     |   /api/feedback       |
                     |   /api/admin/feedback |
                     |   /api/admin/stats    |
                     |   /api/auth/login     |
+                    |                       |
+                    |  Socket.io Server:    |
+                    |   room: kitchen       |
+                    |   room: table-{id}    |
                     |                       |
                     |  Middleware:          |
                     |   /kitchen → cookie   |
@@ -53,25 +55,64 @@ Browser (Customer)       Browser (Kitchen)     Browser (Admin)
 ## Data Flow: Customer Places Order
 
 ```
-1. GET /table/1  →  Next.js renders page
-2. GET /api/menu  →  DB returns 16 MenuItem rows
-3. Customer drags layers  →  NutritionPanel updates client-side
-4. POST /api/orders { tableId, layers: [id...] }
-5. Server creates Order + OrderLayer rows; returns { id, status: "NEW" }
-6. Client opens EventSource → GET /api/orders/stream/{id}
-7. Kitchen advances status → PATCH /api/orders/{id}/status
-8. SSE route detects change → sends event to client
-9. Client updates StatusProgressBar
-10. Status = SERVED → FeedbackForm appears
-11. POST /api/feedback { orderId, content }
-12. Server writes hash-chain block to Feedback table
+1.  GET /table/1  →  Next.js renders page
+2.  GET /api/menu  →  DB returns 16 MenuItem rows
+3.  GET /api/admin/stats → CombosBanner auto-populates Most Famous Combo
+4.  Customer selects layers from orbit ring  →  NutritionPanel + BillPanel update client-side
+5.  POST /api/orders { tableId, layers: [id...] }
+6.  Server creates Order + OrderLayer rows; returns { id, status: "NEW" }
+7.  Server emits Socket.io: socket.to('kitchen').emit('order-new', order)
+8.  Kitchen board receives 'order-new' → card appears in NEW column instantly
+9.  Kitchen advances status → PATCH /api/orders/{id}/status
+10. Server emits Socket.io: socket.to(`table-${tableId}`).emit('order-status-update', { orderId, status })
+11. Customer table receives 'order-status-update' → toast notification + status bar update
+12. While waiting: mini games appear on table (client-only, no backend)
+13. Status = SERVED → GSAP celebration + FeedbackForm appears
+14. POST /api/feedback { orderId, content }
+15. Server writes hash-chain block to Feedback table
 ```
 
-## Real-time
+## Real-time: Socket.io
 
-Primary: SSE via `ReadableStream` with `force-dynamic`. Polls DB every 2 s internally.
+Socket.io replaces the previous SSE implementation (ADR-008).
 
-Fallback: Client `setInterval(3000)` + `router.refresh()` if SSE is unstable on Vercel.
+```
+Kitchen PATCH /api/orders/{id}/status
+  └─→ Server emits 'order-status-update' { orderId, status }
+        └─→ Room: table-{tableId}
+              └─→ Customer table receives event
+                    ├─→ Toast notification ("Your order is now BAKING!")
+                    └─→ Status track bar updates
+
+Kitchen PATCH /api/orders/{id}/status (any advance)
+  └─→ Server also emits 'order-advance' { orderId, status }
+        └─→ Room: kitchen
+              └─→ Kitchen board moves card between columns (GSAP transition)
+
+POST /api/orders (new order created)
+  └─→ Server emits 'order-new' { order }
+        └─→ Room: kitchen
+              └─→ Kitchen board prepends card to NEW column
+```
+
+**Socket.io rooms:**
+- `kitchen` — all kitchen staff clients
+- `table-${tableId}` — the customer at a specific table
+
+**Socket.io server initialization:**
+- Attached to the underlying Node.js `http.Server` (via custom server or `instrumentation.ts`)
+- Single shared instance — do not create multiple Socket.io servers
+
+**Fallback:**
+- If Socket.io is unavailable, customer table falls back to 3–5 s `setInterval` polling `GET /api/orders/[id]`
+
+## Waiting Games (Client-only Layer)
+
+After order is placed, two mini games appear on the table surface:
+- **Tic Tac Toe**: two-player pass-and-play
+- **Pizza Trivia**: quick-fire questions
+
+Both games are entirely client-side React components. No backend, no API calls, no DB writes. They are conditionally rendered while `order.status !== 'SERVED'`.
 
 ## Auth Flow
 
@@ -107,3 +148,5 @@ git push → Vercel CI
 ```
 
 All env secrets in Vercel dashboard only — never in source.
+
+**Note:** Socket.io requires a persistent Node.js server process. On Vercel serverless, use the custom server approach or Vercel's WebSocket support. If serverless constraints make Socket.io impractical, fall back to documented polling strategy.

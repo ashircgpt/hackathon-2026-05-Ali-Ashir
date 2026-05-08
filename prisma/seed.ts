@@ -428,6 +428,15 @@ async function main() {
   }
   console.log(`     ${feedbackBlocks.length} feedback blocks seeded`);
 
+  // Reset PostgreSQL sequences so app-created records don't collide with seed IDs.
+  // pg_get_serial_sequence is robust — works regardless of the exact sequence name.
+  console.log("  → Resetting sequences...");
+  await db.$executeRaw`SELECT setval(pg_get_serial_sequence('"MenuItem"', 'id'), MAX(id)) FROM "MenuItem"`;
+  await db.$executeRaw`SELECT setval(pg_get_serial_sequence('"Order"', 'id'), MAX(id)) FROM "Order"`;
+  await db.$executeRaw`SELECT setval(pg_get_serial_sequence('"OrderLayer"', 'id'), MAX(id)) FROM "OrderLayer"`;
+  await db.$executeRaw`SELECT setval(pg_get_serial_sequence('"Feedback"', 'id'), MAX(id)) FROM "Feedback"`;
+  console.log("     Sequences advanced past seed IDs");
+
   console.log("✅ Seed complete.");
 }
 

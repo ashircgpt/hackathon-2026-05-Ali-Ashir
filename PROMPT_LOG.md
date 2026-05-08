@@ -51,3 +51,23 @@ Format:
 **Notes:** Build clean on first pass after fixing two empty-interface ESLint errors. All 12 routes render. No business logic, no DB, no realtime yet.
 
 ---
+
+### [2026-05-08] — Milestones 2–5: Data layer, API, pizza builder, UI redesign
+
+**Prompt:** Series of milestone prompts covering: (M2) Prisma schema + Supabase seed with 16 menu items, 8 orders, 2 feedback blocks + PostgreSQL sequence reset fix; (M3) Full API layer — GET/POST orders, PATCH status, GET menu, POST feedback, GET admin/feedback + stats, POST auth/login; (M4) Customer pizza builder UI — PizzaCanvas, LayerPalette, SelectedLayersPanel, NutritionPanel, OrderSummary, PizzaBuilder; (M5) Full-screen tabletop UI redesign — h-screen dark tabletop, 560px hero canvas, orbit-style ingredient tray, glass bottom panel, GSAP pop-in, wheel/pinch size control, DragOverlay, animated landing page at /.
+
+**Files affected:** prisma/schema.prisma, prisma/seed.ts, src/app/api/* (all routes), src/types/index.ts, src/lib/pizza-size.ts, src/lib/layer-rules.ts, src/components/pizza-builder/* (all components), tailwind.config.ts, src/app/globals.css, src/app/page.tsx, src/app/table/[tableId]/page.tsx
+
+**Notes:** P2002 seed collision fixed via pg_get_serial_sequence + setval. Canvas visibility issue fixed with pizza-base-disc warm radial gradient. Two plan rejections before final approval (contradictions in earlier plans). Build clean, lint warnings only (pre-existing img tags).
+
+---
+
+### [2026-05-08] — Product vision sync: GSAP + Socket.io + orbit ring + waiting games
+
+**Prompt:** Documentation and Notion sync task. Full PRD update to reflect expanded product vision: black glass tabletop, ingredient orbit ring replacing bottom tray, GSAP for all animations, Socket.io replacing SSE for real-time bidirectional push, left/right nutrition+bill panels, Most Famous Combo banner, waiting mini games (Tic Tac Toe + Pizza Trivia), expanded kitchen Kanban (today-only, 4 columns), expanded admin (stats charts + menu management + ledger verify).
+
+**Files affected:** SPEC.md, CLAUDE.md, src/components/CLAUDE.md, docs/ARCHITECTURE_OVERVIEW.md, docs/TECHNICAL_DECISIONS.md, PROMPT_LOG.md
+
+**Notes:** Documentation-only task. No application code changed. ADR-007 (GSAP) and ADR-008 (Socket.io) added. ADR-002 (SSE) marked superseded. Notion page updated to reflect new vision. Model: Sonnet.
+
+---

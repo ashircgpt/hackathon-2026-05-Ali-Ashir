@@ -2,7 +2,7 @@
 
 ## Overview
 
-Pizza3.14 is a tabletop pizza ordering system for restaurants. Customers build a custom pizza by dragging transparent PNG ingredient layers onto a canvas, place their order, and track it live from NEW through SERVED. After delivery, they submit text feedback stored in a tamper-evident blockchain-style ledger. Kitchen staff manage order progression through a dedicated dashboard. Admins review all orders, verify the feedback ledger integrity, and see the most popular pizza combination.
+Pizza3.14 is a tabletop pizza ordering system for restaurants. Customers build a custom pizza by selecting ingredient layers from an orbit ring around a central canvas, place their order, and track it live from NEW through SERVED. Real-time push notifications (Socket.io) keep the customer table and kitchen board in sync. While waiting, customers can play mini games on the table. After delivery, they submit text feedback stored in a tamper-evident blockchain-style ledger. Kitchen staff manage order progression through a Kanban board that shows only today's active orders. Admins review stats, full order history, manage menu availability, and verify the feedback ledger integrity.
 
 This product is inspired by tabletop ordering concepts. It does not use Pizza Hut branding, assets, trade dress, or any copyrighted material.
 
@@ -23,33 +23,77 @@ Auth is a demo passphrase gate only — not suitable for production. See Post-Ha
 ## Customer Flow
 
 1. Navigate to `/table/{tableId}` (e.g. `/table/1`)
-2. The ingredient palette shows all available layers grouped by type (BASE / SAUCE / CHEESE / TOPPING)
-3. Drag one BASE layer onto the pizza canvas (required to place order)
-4. Optionally drag one SAUCE, one CHEESE, and any number of TOPPINGs onto the canvas
-5. Price, calories, protein, fats, and carbs update live in the nutrition panel as layers are added or removed
-6. Click "Place Order" — order is created with status NEW
-7. Status progress bar appears: NEW → PREPARING → BAKING → READY → SERVED
-8. Status updates in real time via Server-Sent Events (SSE), with 3–5 s polling as fallback
-9. After status reaches SERVED, a feedback textarea appears
-10. Customer submits plain text feedback — one submission per order, gated on SERVED status
+2. The table UI loads: black glass full-screen tabletop, no browser chrome
+3. A **Most Famous Combo banner** appears at the top — auto-populates the canvas with the top combo; customer can dismiss it
+4. Ingredients are arranged in an **orbit ring** around the pizza canvas — BASE / SAUCE / CHEESE / TOPPING grouped and accessible
+5. Tap or drag an ingredient from the orbit ring to add it to the pizza (GSAP fly-in animation)
+6. **Left panel**: live nutrition panel (calories, protein, fat, carbs) updates with each addition/removal
+7. **Right panel**: live bill breakdown (per-item prices + total) and the Place Order button
+8. Exactly one BASE layer is required before Place Order is enabled
+9. Click "Place Order" — order is created with status NEW
+10. **Waiting mode**: a status track bar appears; the orbit ring and panels fade out; mini games appear on the table surface
+11. Status updates in real time via **Socket.io push** from kitchen → customer as toast notifications
+12. After status reaches SERVED, feedback form appears
+13. Customer submits plain text feedback — one submission per order, gated on SERVED status
 
 ---
 
 ## Kitchen Flow
 
 1. Navigate to `/kitchen` — authenticate with kitchen passphrase
-2. See all active orders (NEW, PREPARING, BAKING, READY) sorted oldest-first
-3. Click the advance button on each card to move status forward one step
-4. SERVED orders are removed from the active board (or visually dimmed)
+2. See a **Kanban board — today's orders only** in four columns: NEW | PREPARING | BAKING | READY
+3. New orders appear live on the board via Socket.io (no refresh needed)
+4. Click the "Advance →" button on a card to move it to the next column (PATCH `/api/orders/[id]/status`)
+5. Status advancement emits a Socket.io event → customer table receives a toast notification + status bar update
+6. GSAP animates card transitions between columns
+7. SERVED orders are removed from the board (handled separately in order history)
 
 ---
 
 ## Admin Flow
 
 1. Navigate to `/admin` — authenticate with admin passphrase
-2. **Orders tab**: all orders across all statuses with timestamps and prices
-3. **Feedback tab**: full feedback ledger; chain validity shown as VALID or BROKEN
-4. **Stats tab**: Most Famous Combo (layer configuration with highest order count) + order counts by status
+2. **Stats dashboard**: order volume chart, revenue chart, most famous combo, status breakdown, average order value
+3. **Orders management**: full order list with status filters
+4. **Menu management**: toggle `isAvailable` per item, view prices and image previews
+5. **Feedback ledger**: full ledger view + "Verify Chain" button that re-computes all SHA-256 hashes client-side and shows VALID or BROKEN per block
+
+---
+
+## Table UI Layout (`/table/[tableId]`)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Most Famous Combo banner — dismissible]                   │
+├──────────────┬──────────────────────────┬───────────────────┤
+│              │                          │                   │
+│  Nutrition   │   [PIZZA CANVAS]         │   Bill Panel      │
+│  Panel       │   + orbit ring of        │   + Place Order   │
+│  (left)      │     ingredients          │   (right)         │
+│              │                          │                   │
+│              │   [Waiting: games here]  │                   │
+└──────────────┴──────────────────────────┴───────────────────┘
+```
+
+- **Background**: black glass (`#0a0a0a` / near-black), full `h-screen`, no web chrome
+- **Pizza canvas**: circular, central, hero element. Realistic stacked food photo layers.
+- **Orbit ring**: ingredients orbit the canvas in a ring; selecting one flies it onto the pizza (GSAP)
+- **Left panel**: live nutrition (calories, protein, fat, carbs)
+- **Right panel**: live bill breakdown (each selected item + price + size multiplier) + Place Order button
+- **Top banner**: Most Famous Combo — auto-populates pizza on load; dismissible with GSAP slide-out
+- **Waiting mode** (post-order, pre-SERVED): orbit ring fades, panels collapse, two mini games appear on the table surface
+- **GSAP** handles all animations: ingredient fly-in, layer pop-in, orbit pulse, combo banner, waiting transition, order celebration
+
+---
+
+## Waiting Games
+
+After an order is placed and while waiting for SERVED status, two mini games are available on the table:
+
+1. **Tic Tac Toe** — two-player (pass-and-play) on the table surface
+2. **Pizza Trivia** — quick-fire trivia questions about pizza, food, and Italian culture (client-side only, no backend)
+
+Both games are client-only. No backend, no scores persisted, no DB changes.
 
 ---
 
@@ -68,14 +112,16 @@ Layer render order on canvas: BASE (z-index 0) → SAUCE (z-index 1) → CHEESE 
 
 ## Pizza Asset Rules
 
-All ingredient layer PNG images must follow these rules:
+All ingredient layer images must follow these rules:
 
 - **Top-down view**: image must be shot or rendered from directly above (90° overhead)
-- **Transparent background**: PNG alpha channel; no solid background color
-- **Uniform canvas size**: all PNGs must be the same pixel dimensions (e.g. 512×512 px)
+- **Realistic food photography**: JPEG or PNG; photorealistic food photos preferred over abstract flat art
+- **Uniform canvas size**: all images must be the same pixel dimensions (e.g. 512×512 px)
 - **Centered ingredient**: the ingredient must be centered within the canvas bounds
 - **No third-party branding**: no Pizza Hut logos, trade dress, fonts, or visual style; no other brand assets
-- **Layering contract**: images are designed to be stacked; only the ingredient itself should be opaque
+- **Layering contract**: for stacked rendering, only the ingredient itself should be the primary visual; edge areas should fade/be transparent where possible
+- **File paths**: `public/assets/pizza/bases/*.jpg`, `public/assets/pizza/sauces/*.jpg`, `public/assets/pizza/cheese/*.jpg`, `public/assets/pizza/toppings/*.jpg`
+- **Seed imageUrl fields must match these paths exactly**
 
 ---
 
@@ -88,6 +134,7 @@ NEW → PREPARING → BAKING → READY → SERVED
 - Each PATCH to `/api/orders/[id]/status` advances one step
 - SERVED is the final state — no further advancement allowed
 - Feedback submission is blocked until status === SERVED
+- Each status advance emits a Socket.io event to the customer table
 
 ---
 
@@ -111,9 +158,12 @@ blockHash   = SHA256(prevHash + timestamp + contentHash)
 
 ## Real-time Strategy
 
-- Primary: Server-Sent Events (SSE) via `/api/orders/stream/[id]`
-- Fallback: 3–5 second client-side polling if SSE is unstable on Vercel
-- Chosen approach documented in `CLAUDE.md`
+- **Primary**: Socket.io bidirectional push
+  - Kitchen advances status → server emits `order-status-update` → customer table room receives toast + status bar update
+  - New orders appear on kitchen board without refresh
+  - Customer table room: `table-${tableId}`, Kitchen room: `kitchen`
+- **Replaced**: SSE (`/api/orders/stream/[id]`) is superseded by Socket.io (see ADR-008)
+- **Fallback**: 3–5 s client polling if Socket.io is unavailable
 
 ---
 
@@ -125,8 +175,9 @@ blockHash   = SHA256(prevHash + timestamp + contentHash)
 | Database | Supabase free tier (PostgreSQL) via Prisma ORM |
 | DB fallback | SQLite + Prisma (emergency only) |
 | Drag & Drop | @dnd-kit/core |
+| Animations | GSAP (ingredient fly-in, layer pop, orbit pulse, celebrations) |
 | Styling | Tailwind CSS |
-| Real-time | SSE (with polling fallback) |
+| Real-time | Socket.io (replaces SSE) |
 | Hashing | Node `crypto` (server) + Web Crypto API (client) |
 | Auth | Demo passphrase + signed cookie (AUTH_SECRET) |
 | Deployment | Vercel free tier |
@@ -146,6 +197,7 @@ The following are explicitly excluded from this build:
 - Email or SMS notifications
 - Multi-restaurant or multi-location support
 - Table management UI (tables are hardcoded IDs for demo)
+- Persisting mini game scores
 
 ---
 

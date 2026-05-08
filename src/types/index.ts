@@ -3,6 +3,7 @@
 
 export type OrderStatus = "NEW" | "PREPARING" | "BAKING" | "READY" | "SERVED";
 export type LayerType = "BASE" | "SAUCE" | "CHEESE" | "TOPPING";
+export type { PizzaSize } from "@/lib/pizza-size";
 
 export interface MenuItem {
   id: number;
