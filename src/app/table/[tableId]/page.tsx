@@ -1,4 +1,4 @@
-import { PizzaBuilder } from "@/components/pizza-builder/PizzaBuilder";
+import TestOrderForm from "@/components/test-order/TestOrderForm";
 
 interface TablePageProps {
   params: { tableId: string };
@@ -9,5 +9,5 @@ export function generateMetadata({ params }: TablePageProps) {
 }
 
 export default function TablePage({ params }: TablePageProps) {
-  return <PizzaBuilder tableId={params.tableId} />;
+  return <TestOrderForm tableId={params.tableId} />;
 }

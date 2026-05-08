@@ -156,6 +156,19 @@ Format:
 
 **Files affected:** src/components/landing/LandingPage.tsx, src/components/landing/sections/StorySection.tsx, src/components/landing/sections/ProblemSection.tsx, src/components/landing/sections/SolutionSection.tsx, src/components/landing/sections/FeaturesSection.tsx, src/components/landing/sections/HowItWorksSection.tsx, src/components/landing/sections/FinalCTASection.tsx
 
-**Notes:** Commits cf9ccaa + 4d2017a. Root cause: `gsap.registerPlugin(ScrollTrigger)` fired too late (parent useEffect runs after child useEffects in React), and even after moving it to module scope, GSAP's `gsap.from()` opacity:0 initial state permanently hid cards when ScrollTrigger silently failed (SSR module eval, React Strict Mode double-invoke). Final fix: replaced all scroll-entrance animations across 6 section files with native `IntersectionObserver` + CSS transitions (`.reveal`, `.reveal-scale`, `.reveal-line` utility classes added to globals.css). GSAP retained only for continuous animations (HeroSection rotations, FinalCTASection glow/rotation). LandingPage.tsx now imports nothing from gsap. Model: Sonnet.
+**Notes:** Commits cf9ccaa → b7da16b. Root cause: `gsap.registerPlugin(ScrollTrigger)` fired too late (parent useEffect runs after child useEffects in React), and even after moving it to module scope, GSAP's `gsap.from()` opacity:0 initial state permanently hid cards when ScrollTrigger silently failed (SSR module eval, React Strict Mode double-invoke). Final fix: replaced all scroll-entrance animations across 6 section files with native `IntersectionObserver` + CSS transitions (`.reveal`, `.reveal-scale`, `.reveal-line` utility classes added to globals.css). GSAP retained only for continuous animations (HeroSection rotations, FinalCTASection glow/rotation). LandingPage.tsx now imports nothing from gsap. Model: Sonnet.
+
+---
+
+### [2026-05-08] — Table UI replaced with TestOrderForm (kitchen/admin testing harness)
+
+**Prompt:** "delete the existing table ui... add a simple form type thing for now with the same ui color theme so that i can easily place order... check that weather bills + nutritions are updating or not and then I place order I can get the perfect order tracking notification as per kitchen kaanbaan movement using socket.io"
+
+**Files affected:**
+- DELETED: `src/components/pizza-builder/` (8 files — PizzaBuilder, PizzaCanvas, LayerPalette, SelectedLayersPanel, LayerItemCard, PizzaSizeSelector, NutritionPanel, OrderSummary)
+- NEW: `src/components/test-order/TestOrderForm.tsx` — two-column dark glass form: ingredient picker (radio per BASE/SAUCE/CHEESE, checkbox for TOPPING), live bill + 4-macro nutrition panel, Place Order → `POST /api/orders`, Socket.io `order-status-update` listener, animated 5-step status bar with ember fill
+- MODIFIED: `src/app/table/[tableId]/page.tsx` — now renders TestOrderForm
+
+**Notes:** Zero ESLint warnings. Reuses `computeTotals()`, `getSocket()`, all existing types. No new dependencies. Model: Sonnet.
 
 ---
