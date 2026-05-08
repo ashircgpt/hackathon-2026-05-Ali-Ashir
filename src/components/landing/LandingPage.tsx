@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -13,14 +12,10 @@ import FeaturesSection from "./sections/FeaturesSection";
 import HowItWorksSection from "./sections/HowItWorksSection";
 import FinalCTASection from "./sections/FinalCTASection";
 
-export default function LandingPage() {
-  useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-    return () => {
-      ScrollTrigger.getAll().forEach((t) => t.kill());
-    };
-  }, []);
+// Register at module scope so it is available before any child useEffect runs
+gsap.registerPlugin(ScrollTrigger);
 
+export default function LandingPage() {
   return (
     <main className="bg-void text-cream overflow-x-hidden">
       <Navbar />

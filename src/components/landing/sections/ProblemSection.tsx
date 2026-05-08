@@ -55,7 +55,7 @@ export default function ProblemSection() {
         duration: 1,
         stagger: 0.12,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 75%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 75%", once: true },
       });
       gsap.from(".problem-card", {
         y: 40,
@@ -63,7 +63,7 @@ export default function ProblemSection() {
         duration: 0.7,
         stagger: 0.08,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 65%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 65%", once: true },
       });
     }, sectionRef);
     return () => ctx.revert();

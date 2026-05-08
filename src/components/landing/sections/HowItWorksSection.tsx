@@ -23,7 +23,7 @@ export default function HowItWorksSection() {
         duration: 1,
         stagger: 0.12,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 75%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 75%", once: true },
       });
       gsap.from(".step-item", {
         opacity: 0,
@@ -31,7 +31,7 @@ export default function HowItWorksSection() {
         duration: 0.7,
         stagger: 0.14,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 65%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 65%", once: true },
       });
       gsap.fromTo(
         ".flow-line-fill",
@@ -40,7 +40,7 @@ export default function HowItWorksSection() {
           scaleX: 1,
           duration: 1.6,
           ease: "power2.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 60%" },
+          scrollTrigger: { trigger: sectionRef.current, start: "top 60%", once: true },
         },
       );
     }, sectionRef);

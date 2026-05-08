@@ -14,7 +14,7 @@ export default function StorySection() {
         duration: 1,
         stagger: 0.15,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 75%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 75%", once: true },
       });
       gsap.utils.toArray<HTMLElement>(".story-stack-layer").forEach((el, i) => {
         gsap.fromTo(
@@ -26,7 +26,7 @@ export default function StorySection() {
             duration: 0.6,
             ease: "back.out(1.7)",
             delay: i * 0.18,
-            scrollTrigger: { trigger: sectionRef.current, start: "top 60%" },
+            scrollTrigger: { trigger: sectionRef.current, start: "top 60%", once: true },
           },
         );
       });
@@ -77,6 +77,7 @@ export default function StorySection() {
                 alt=""
                 className="w-full h-full object-cover"
                 aria-hidden
+                loading="lazy"
               />
             </div>
             {/* Sauce */}
@@ -87,6 +88,7 @@ export default function StorySection() {
                 alt=""
                 className="w-full h-full object-cover"
                 aria-hidden
+                loading="lazy"
               />
             </div>
             {/* Cheese */}
@@ -97,6 +99,7 @@ export default function StorySection() {
                 alt=""
                 className="w-full h-full object-cover"
                 aria-hidden
+                loading="lazy"
               />
             </div>
             {/* Toppings sprinkled */}

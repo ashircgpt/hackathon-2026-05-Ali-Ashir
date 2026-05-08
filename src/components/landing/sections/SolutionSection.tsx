@@ -39,7 +39,7 @@ export default function SolutionSection() {
         duration: 1,
         stagger: 0.12,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 75%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 75%", once: true },
       });
       gsap.from(".pillar-card", {
         y: 60,
@@ -47,7 +47,7 @@ export default function SolutionSection() {
         duration: 0.9,
         stagger: 0.18,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 65%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 65%", once: true },
       });
       gsap.fromTo(
         ".pillar-line",
@@ -56,7 +56,7 @@ export default function SolutionSection() {
           scaleX: 1,
           duration: 1.4,
           ease: "power3.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 60%" },
+          scrollTrigger: { trigger: sectionRef.current, start: "top 60%", once: true },
         },
       );
     }, sectionRef);

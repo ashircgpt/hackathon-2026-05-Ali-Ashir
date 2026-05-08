@@ -16,7 +16,7 @@ export default function FinalCTASection() {
         duration: 1,
         stagger: 0.15,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 70%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 70%", once: true },
       });
       gsap.fromTo(
         ".cta-pizza-wrap",
@@ -26,7 +26,7 @@ export default function FinalCTASection() {
           opacity: 1,
           duration: 1.4,
           ease: "back.out(1.4)",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 70%" },
+          scrollTrigger: { trigger: sectionRef.current, start: "top 70%", once: true },
         },
       );
       gsap.to(".cta-pizza-img", {
@@ -69,6 +69,7 @@ export default function FinalCTASection() {
             alt=""
             className="w-full h-full object-cover"
             aria-hidden
+            loading="lazy"
           />
         </div>
       </div>

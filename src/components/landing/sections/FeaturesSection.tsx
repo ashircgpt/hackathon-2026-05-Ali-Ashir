@@ -67,7 +67,7 @@ export default function FeaturesSection() {
         duration: 1,
         stagger: 0.12,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 75%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 75%", once: true },
       });
       gsap.from(".feature-card", {
         y: 50,
@@ -75,7 +75,7 @@ export default function FeaturesSection() {
         duration: 0.8,
         stagger: 0.1,
         ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 65%" },
+        scrollTrigger: { trigger: sectionRef.current, start: "top 65%", once: true },
       });
     }, sectionRef);
     return () => ctx.revert();
