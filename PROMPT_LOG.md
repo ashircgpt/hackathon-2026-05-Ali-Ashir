@@ -149,3 +149,13 @@ Format:
 **Notes:** Commit 36fdab6. Custom server.ts approach chosen for Socket.io persistence (incompatible with Vercel serverless — targets Railway/Render). Middleware upgraded to Web Crypto API (Edge-compatible SHA-256). `computeTopCombo()` extracted to lib/combo.ts to avoid duplication. All Socket emit calls wrapped in try/catch for graceful degradation. Model: Sonnet.
 
 ---
+
+### [2026-05-08] — Landing page performance fix: invisible section cards
+
+**Prompt:** "The UI of landing page is perfect But it is taking too much time to load like even near to not loading (for example: cards of problem are invisible, similarly cards of solution are also invisible) ig we need to optimize... optimize it like you are a senior frontend developer."
+
+**Files affected:** src/components/landing/LandingPage.tsx, src/components/landing/sections/StorySection.tsx, src/components/landing/sections/ProblemSection.tsx, src/components/landing/sections/SolutionSection.tsx, src/components/landing/sections/FeaturesSection.tsx, src/components/landing/sections/HowItWorksSection.tsx, src/components/landing/sections/FinalCTASection.tsx
+
+**Notes:** Commit cf9ccaa. Root cause: `gsap.registerPlugin(ScrollTrigger)` was inside `LandingPage`'s `useEffect`, which React runs *after* all children's `useEffect`s. All six section components called `gsap.from(..., { scrollTrigger: {...} })` before the plugin was registered — ScrollTrigger silently failed, leaving all animated elements at `opacity: 0`. Fix: moved `gsap.registerPlugin(ScrollTrigger)` to module scope in LandingPage.tsx, outside the component function. Also added `once: true` to all `scrollTrigger` configs (frees IntersectionObserver memory after first fire) and `loading="lazy"` on non-hero pizza images. Model: Sonnet.
+
+---
