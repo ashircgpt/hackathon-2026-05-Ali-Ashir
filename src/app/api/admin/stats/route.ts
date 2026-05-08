@@ -1,16 +1,47 @@
 import { prisma } from "@/lib/prisma";
 import { ok } from "@/lib/api-response";
+import { computeTopCombo } from "@/lib/combo";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * @swagger
+ * /api/admin/stats:
+ *   get:
+ *     tags: [admin]
+ *     summary: Admin dashboard statistics
+ *     description: >
+ *       Returns aggregate stats for the admin dashboard: order counts, revenue,
+ *       status breakdown, hourly chart data (today), and the most famous combo.
+ *       Requires admin cookie.
+ *     security:
+ *       - adminCookie: []
+ *     responses:
+ *       200:
+ *         description: Dashboard statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/AdminStats'
+ */
 export async function GET() {
+  // Start of today (UTC midnight)
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+
   const [
     totalOrders,
     activeOrders,
     servedOrders,
     revenueAgg,
     verifiedFeedbackCount,
-    orders,
+    todayOrdersRaw,
+    allOrders,
   ] = await Promise.all([
     prisma.order.count(),
     prisma.order.count({
@@ -19,58 +50,62 @@ export async function GET() {
     prisma.order.count({ where: { status: "SERVED" } }),
     prisma.order.aggregate({ _sum: { totalPrice: true } }),
     prisma.feedback.count(),
+    // Today's orders for stat cards + hourly chart
     prisma.order.findMany({
-      include: {
-        layers: { include: { menuItem: true } },
-        feedback: true,
-      },
+      where: { createdAt: { gte: todayStart } },
+      select: { status: true, totalPrice: true, createdAt: true },
+    }),
+    // All orders for status breakdown
+    prisma.order.findMany({
+      select: { status: true },
     }),
   ]);
 
-  // ordersByStatus
-  const ordersByStatus = orders.reduce<Record<string, number>>((acc, o) => {
+  // Status breakdown across all time
+  const ordersByStatus = allOrders.reduce<Record<string, number>>((acc, o) => {
     acc[o.status] = (acc[o.status] ?? 0) + 1;
     return acc;
   }, {});
 
-  // topCombo — prefer feedback-backed SERVED orders, fall back to all SERVED, then all
-  const feedbackBacked = orders.filter(
-    (o) => o.status === "SERVED" && o.feedback !== null,
-  );
-  const served = orders.filter((o) => o.status === "SERVED");
-  const pool =
-    feedbackBacked.length > 0
-      ? feedbackBacked
-      : served.length > 0
-        ? served
-        : orders;
+  // Today's aggregate stats
+  const todayOrders = todayOrdersRaw.length;
+  const todayRevenue =
+    Math.round(todayOrdersRaw.reduce((s, o) => s + o.totalPrice, 0) * 100) / 100;
 
-  const comboCounts: Record<string, { names: string[]; count: number }> = {};
-  for (const order of pool) {
-    const names = order.layers.map((l) => l.menuItem.name).sort();
-    const key = names.join(" | ");
-    if (!comboCounts[key]) comboCounts[key] = { names, count: 0 };
-    comboCounts[key].count++;
+  // Hourly breakdown for bar chart (hours 0–23, today only)
+  const hourlyMap: Record<number, { count: number; revenue: number }> = {};
+  for (let h = 0; h < 24; h++) hourlyMap[h] = { count: 0, revenue: 0 };
+  for (const o of todayOrdersRaw) {
+    const h = o.createdAt.getUTCHours();
+    hourlyMap[h].count++;
+    hourlyMap[h].revenue =
+      Math.round((hourlyMap[h].revenue + o.totalPrice) * 100) / 100;
   }
-  const topComboEntry = Object.values(comboCounts).sort(
-    (a, b) =>
-      b.count - a.count ||
-      a.names.join().localeCompare(b.names.join()),
-  )[0] ?? null;
+  const hourlyBreakdown = Array.from({ length: 24 }, (_, h) => ({
+    hour: h,
+    count: hourlyMap[h].count,
+    revenue: hourlyMap[h].revenue,
+  }));
 
   const totalRevenue =
     Math.round((revenueAgg._sum.totalPrice ?? 0) * 100) / 100;
+
+  // Most famous combo via shared helper
+  const topComboResult = await computeTopCombo();
 
   return ok({
     totalOrders,
     activeOrders,
     servedOrders,
     totalRevenue,
+    todayOrders,
+    todayRevenue,
     averageRating: null, // no stars field in schema — plain text feedback only
     verifiedFeedbackCount,
     ordersByStatus,
-    topCombo: topComboEntry
-      ? { ingredients: topComboEntry.names, count: topComboEntry.count }
+    hourlyBreakdown,
+    topCombo: topComboResult
+      ? { ingredients: topComboResult.ingredients, count: topComboResult.count }
       : null,
   });
 }

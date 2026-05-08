@@ -5,16 +5,19 @@ export const dynamic = "force-dynamic";
 
 /**
  * @swagger
- * /api/menu:
+ * /api/admin/menu:
  *   get:
- *     tags: [menu]
- *     summary: Get available menu items
+ *     tags: [admin]
+ *     summary: Get all menu items (admin)
  *     description: >
- *       Returns all menu items where isAvailable is true, ordered by layerType
- *       then sortOrder. Used by the customer pizza builder orbit ring.
+ *       Returns ALL menu items including unavailable ones.
+ *       Used by the admin menu management page to show the full catalogue.
+ *       Requires admin cookie.
+ *     security:
+ *       - adminCookie: []
  *     responses:
  *       200:
- *         description: Available menu items
+ *         description: All menu items
  *         content:
  *           application/json:
  *             schema:
@@ -22,15 +25,15 @@ export const dynamic = "force-dynamic";
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
  *                 data:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/MenuItem'
+ *       401:
+ *         description: Not authenticated
  */
 export async function GET() {
   const items = await prisma.menuItem.findMany({
-    where: { isAvailable: true },
     orderBy: [{ layerType: "asc" }, { sortOrder: "asc" }],
   });
   return ok(items);

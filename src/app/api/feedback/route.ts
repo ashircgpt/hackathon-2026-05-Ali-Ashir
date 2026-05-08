@@ -5,6 +5,52 @@ import { ok, fail } from "@/lib/api-response";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * @swagger
+ * /api/feedback:
+ *   post:
+ *     tags: [feedback]
+ *     summary: Submit customer feedback for a SERVED order
+ *     description: >
+ *       Appends a new block to the feedback hash chain. The order must be in
+ *       SERVED status and must not already have feedback. Each block records
+ *       contentHash, prevHash, timestamp, and blockHash for tamper detection.
+ *       The admin ledger can verify chain integrity client-side.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [orderId, content]
+ *             properties:
+ *               orderId:
+ *                 type: integer
+ *                 minimum: 1
+ *                 example: 42
+ *               content:
+ *                 type: string
+ *                 minLength: 1
+ *                 example: "Amazing pizza, loved the crispy base!"
+ *     responses:
+ *       201:
+ *         description: Feedback block created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Feedback'
+ *       400:
+ *         description: Validation error or order not yet SERVED
+ *       404:
+ *         description: Order not found
+ *       409:
+ *         description: Feedback already submitted for this order
+ */
 export async function POST(req: NextRequest) {
   let body: unknown;
   try {
