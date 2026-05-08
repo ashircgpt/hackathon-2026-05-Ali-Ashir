@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { computeTotals } from "@/lib/nutrition";
 import { getSocket, disconnectSocket } from "@/lib/socket-client";
+import ComboBanner from "./ComboBanner";
+import FeedbackForm from "./FeedbackForm";
 import type {
   MenuItem,
   LayerType,
@@ -39,6 +41,8 @@ export default function TestOrderForm({ tableId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [menuError, setMenuError] = useState<string | null>(null);
+  const [combo, setCombo] = useState<{ ingredients: MenuItem[]; count: number } | null>(null);
+  const [comboDismissed, setComboDismissed] = useState(false);
   const tableNum = parseInt(tableId, 10) || 1;
   // Fetch menu on mount
   useEffect(() => {
@@ -49,6 +53,14 @@ export default function TestOrderForm({ tableId }: Props) {
         else setMenuError("Failed to load menu.");
       })
       .catch(() => setMenuError("Failed to load menu."));
+  }, []);
+
+  // Fetch famous combo on mount (optional — silent on failure)
+  useEffect(() => {
+    fetch("/api/menu/famous-combo")
+      .then((r) => r.json())
+      .then((res) => { if (res.success && res.data) setCombo(res.data); })
+      .catch(() => {});
   }, []);
 
   // Socket.io — join table room and listen for live status pushes
@@ -141,11 +153,20 @@ export default function TestOrderForm({ tableId }: Props) {
     }
   }
 
+  function applyCombo(ids: number[]) {
+    if (orderId) return;
+    const items = menuItems.filter((m) => ids.includes(m.id));
+    setSelected(new Set(items.map((i) => i.id)));
+    setComboDismissed(true);
+    setError(null);
+  }
+
   function resetOrder() {
     setSelected(new Set());
     setOrderId(null);
     setOrderStatus(null);
     setError(null);
+    setComboDismissed(false);
   }
 
   const currentStepIndex = orderStatus
@@ -176,7 +197,16 @@ export default function TestOrderForm({ tableId }: Props) {
 
       <div className="w-full max-w-5xl grid md:grid-cols-2 gap-6">
         {/* ── LEFT: Ingredient Selector ── */}
-        <div className="bg-glass border border-ash rounded-2xl p-6 flex flex-col gap-7">
+        <div className="flex flex-col gap-4">
+          {combo && !comboDismissed && !orderId && (
+            <ComboBanner
+              combo={combo}
+              onApply={applyCombo}
+              onDismiss={() => setComboDismissed(true)}
+            />
+          )}
+
+          <div className="bg-glass border border-ash rounded-2xl p-6 flex flex-col gap-7">
           <p className="text-[11px] font-mono uppercase tracking-widest text-cheese">
             Select Ingredients
           </p>
@@ -231,6 +261,7 @@ export default function TestOrderForm({ tableId }: Props) {
               </div>
             ),
           )}
+          </div>
         </div>
 
         {/* ── RIGHT: Bill, Nutrition, Actions ── */}
@@ -360,18 +391,8 @@ export default function TestOrderForm({ tableId }: Props) {
                 />
               </div>
 
-              {orderStatus === "SERVED" && (
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-cream/60 mb-3">
-                    Order delivered! Enjoy your pizza.
-                  </p>
-                  <button
-                    onClick={resetOrder}
-                    className="px-6 py-2 rounded-full border border-ember text-ember text-sm font-semibold hover:bg-ember hover:text-void transition-all"
-                  >
-                    Start New Order
-                  </button>
-                </div>
+              {orderStatus === "SERVED" && orderId && (
+                <FeedbackForm orderId={orderId} onStartNewOrder={resetOrder} />
               )}
             </div>
           )}
