@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import gsap from "gsap";
 import {
   ScrollText,
   MessageSquareWarning,
@@ -48,25 +47,22 @@ export default function ProblemSection() {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(".problem-heading", {
-        y: 50,
-        opacity: 0,
-        duration: 1,
-        stagger: 0.12,
-        ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 75%", once: true },
-      });
-      gsap.from(".problem-card", {
-        y: 40,
-        opacity: 0,
-        duration: 0.7,
-        stagger: 0.08,
-        ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 65%", once: true },
-      });
-    }, sectionRef);
-    return () => ctx.revert();
+    if (!sectionRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -60px 0px" },
+    );
+    sectionRef.current
+      .querySelectorAll(".reveal")
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -76,24 +72,25 @@ export default function ProblemSection() {
       className="relative py-32 md:py-48 px-6 bg-tomato-radial"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="problem-heading text-[10px] md:text-xs font-mono uppercase tracking-[0.35em] text-tomato mb-6">
+        <p className="reveal text-[10px] md:text-xs font-mono uppercase tracking-[0.35em] text-tomato mb-6">
           02 — THE OLD WAY
         </p>
-        <h2 className="problem-heading text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight max-w-3xl">
+        <h2 className="reveal text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight max-w-3xl" style={{ transitionDelay: "80ms" }}>
           Restaurants are stuck
           <br />
           <span className="text-tomato">in 1995.</span>
         </h2>
-        <p className="problem-heading text-base md:text-lg text-cream/70 max-w-2xl mb-16 leading-relaxed">
+        <p className="reveal text-base md:text-lg text-cream/70 max-w-2xl mb-16 leading-relaxed" style={{ transitionDelay: "160ms" }}>
           Six pain points every diner has felt. Six broken processes every
           restaurant tolerates because they always have.
         </p>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {PROBLEMS.map(({ icon: Icon, title, desc }) => (
+          {PROBLEMS.map(({ icon: Icon, title, desc }, i) => (
             <div
               key={title}
-              className="problem-card group rounded-2xl border border-ash bg-glass/40 p-6 hover:border-tomato/60 hover:bg-glass/60 transition-all"
+              className="reveal group rounded-2xl border border-ash bg-glass/40 p-6 hover:border-tomato/60 hover:bg-glass/60 transition-colors"
+              style={{ transitionDelay: `${i * 80}ms` }}
             >
               <div className="w-11 h-11 rounded-lg bg-tomato/10 flex items-center justify-center mb-5 text-tomato group-hover:bg-tomato/20 group-hover:scale-110 transition-all">
                 <Icon className="w-5 h-5" aria-hidden />

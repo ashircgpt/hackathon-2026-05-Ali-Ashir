@@ -1,37 +1,27 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import gsap from "gsap";
 
 export default function StorySection() {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(".story-reveal", {
-        y: 60,
-        opacity: 0,
-        duration: 1,
-        stagger: 0.15,
-        ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 75%", once: true },
-      });
-      gsap.utils.toArray<HTMLElement>(".story-stack-layer").forEach((el, i) => {
-        gsap.fromTo(
-          el,
-          { opacity: 0, scale: 0.8 },
-          {
-            opacity: 1,
-            scale: 1,
-            duration: 0.6,
-            ease: "back.out(1.7)",
-            delay: i * 0.18,
-            scrollTrigger: { trigger: sectionRef.current, start: "top 60%", once: true },
-          },
-        );
-      });
-    }, sectionRef);
-    return () => ctx.revert();
+    if (!sectionRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -60px 0px" },
+    );
+    sectionRef.current
+      .querySelectorAll(".reveal, .reveal-scale")
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -43,22 +33,22 @@ export default function StorySection() {
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
         {/* Left — narrative */}
         <div>
-          <p className="story-reveal text-[10px] md:text-xs font-mono uppercase tracking-[0.35em] text-cheese mb-6">
+          <p className="reveal text-[10px] md:text-xs font-mono uppercase tracking-[0.35em] text-cheese mb-6">
             01 — THE VISION
           </p>
-          <h2 className="story-reveal text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-8 leading-tight">
+          <h2 className="reveal text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-8 leading-tight" style={{ transitionDelay: "80ms" }}>
             Pizza is universal.
             <br />
             <span className="text-cream/40">
               Ordering it shouldn&apos;t feel ancient.
             </span>
           </h2>
-          <p className="story-reveal text-base md:text-lg text-cream/70 mb-5 leading-relaxed">
+          <p className="reveal text-base md:text-lg text-cream/70 mb-5 leading-relaxed" style={{ transitionDelay: "160ms" }}>
             Most restaurants still operate like it&apos;s 1995. Paper menus,
             verbal orders, kitchen tickets, blind waits. Customers don&apos;t
             know what they&apos;re getting until it lands on the table.
           </p>
-          <p className="story-reveal text-base md:text-lg text-cream/70 leading-relaxed">
+          <p className="reveal text-base md:text-lg text-cream/70 leading-relaxed" style={{ transitionDelay: "240ms" }}>
             We rebuilt the dining table from scratch. Pizza3.14 turns every
             seat into an interactive canvas — visualize, customize, track, and
             verify your meal in real time.
@@ -70,7 +60,7 @@ export default function StorySection() {
           <div className="absolute inset-0 rounded-full bg-ember/15 blur-3xl" aria-hidden />
           <div className="relative w-full h-full">
             {/* Crust */}
-            <div className="story-stack-layer absolute inset-0 rounded-full overflow-hidden border-2 border-crust shadow-2xl">
+            <div className="reveal-scale absolute inset-0 rounded-full overflow-hidden border-2 border-crust shadow-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/assets/pizza/bases/1.jpg"
@@ -81,7 +71,7 @@ export default function StorySection() {
               />
             </div>
             {/* Sauce */}
-            <div className="story-stack-layer absolute inset-[8%] rounded-full overflow-hidden mix-blend-multiply opacity-90">
+            <div className="reveal-scale absolute inset-[8%] rounded-full overflow-hidden mix-blend-multiply opacity-90" style={{ transitionDelay: "100ms" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/assets/pizza/sauces/tomatto.jpg"
@@ -92,7 +82,7 @@ export default function StorySection() {
               />
             </div>
             {/* Cheese */}
-            <div className="story-stack-layer absolute inset-[14%] rounded-full overflow-hidden opacity-80">
+            <div className="reveal-scale absolute inset-[14%] rounded-full overflow-hidden opacity-80" style={{ transitionDelay: "200ms" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/assets/pizza/cheese/cheddar_cheese.jpg"
@@ -102,22 +92,22 @@ export default function StorySection() {
                 loading="lazy"
               />
             </div>
-            {/* Toppings sprinkled */}
-            <div className="story-stack-layer absolute top-[30%] left-[28%] w-12 h-12 rounded-full overflow-hidden border-2 border-void">
+            {/* Toppings */}
+            <div className="reveal-scale absolute top-[30%] left-[28%] w-12 h-12 rounded-full overflow-hidden border-2 border-void" style={{ transitionDelay: "300ms" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/pizza/toppings/peperonis.jpg" alt="" className="w-full h-full object-cover" aria-hidden />
+              <img src="/assets/pizza/toppings/peperonis.jpg" alt="" className="w-full h-full object-cover" aria-hidden loading="lazy" />
             </div>
-            <div className="story-stack-layer absolute top-[55%] right-[25%] w-10 h-10 rounded-full overflow-hidden border-2 border-void">
+            <div className="reveal-scale absolute top-[55%] right-[25%] w-10 h-10 rounded-full overflow-hidden border-2 border-void" style={{ transitionDelay: "380ms" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/pizza/toppings/mushrooms.jpg" alt="" className="w-full h-full object-cover" aria-hidden />
+              <img src="/assets/pizza/toppings/mushrooms.jpg" alt="" className="w-full h-full object-cover" aria-hidden loading="lazy" />
             </div>
-            <div className="story-stack-layer absolute top-[28%] right-[32%] w-9 h-9 rounded-full overflow-hidden border-2 border-void">
+            <div className="reveal-scale absolute top-[28%] right-[32%] w-9 h-9 rounded-full overflow-hidden border-2 border-void" style={{ transitionDelay: "440ms" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/pizza/toppings/olives.jpg" alt="" className="w-full h-full object-cover" aria-hidden />
+              <img src="/assets/pizza/toppings/olives.jpg" alt="" className="w-full h-full object-cover" aria-hidden loading="lazy" />
             </div>
-            <div className="story-stack-layer absolute bottom-[28%] left-[36%] w-11 h-11 rounded-full overflow-hidden border-2 border-void">
+            <div className="reveal-scale absolute bottom-[28%] left-[36%] w-11 h-11 rounded-full overflow-hidden border-2 border-void" style={{ transitionDelay: "500ms" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/pizza/toppings/capsicum.jpg" alt="" className="w-full h-full object-cover" aria-hidden />
+              <img src="/assets/pizza/toppings/capsicum.jpg" alt="" className="w-full h-full object-cover" aria-hidden loading="lazy" />
             </div>
           </div>
         </div>

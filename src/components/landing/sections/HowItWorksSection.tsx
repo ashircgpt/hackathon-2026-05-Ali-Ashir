@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import gsap from "gsap";
 import { Sofa, MousePointer2, Send, Eye, ShieldCheck } from "lucide-react";
 
 const STEPS = [
@@ -16,35 +15,22 @@ export default function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(".flow-heading", {
-        y: 50,
-        opacity: 0,
-        duration: 1,
-        stagger: 0.12,
-        ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 75%", once: true },
-      });
-      gsap.from(".step-item", {
-        opacity: 0,
-        y: 40,
-        duration: 0.7,
-        stagger: 0.14,
-        ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 65%", once: true },
-      });
-      gsap.fromTo(
-        ".flow-line-fill",
-        { scaleX: 0 },
-        {
-          scaleX: 1,
-          duration: 1.6,
-          ease: "power2.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 60%", once: true },
-        },
-      );
-    }, sectionRef);
-    return () => ctx.revert();
+    if (!sectionRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -60px 0px" },
+    );
+    sectionRef.current
+      .querySelectorAll(".reveal, .reveal-line")
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -54,10 +40,10 @@ export default function HowItWorksSection() {
       className="relative py-32 md:py-48 px-6"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="flow-heading text-[10px] md:text-xs font-mono uppercase tracking-[0.35em] text-cheese mb-6">
+        <p className="reveal text-[10px] md:text-xs font-mono uppercase tracking-[0.35em] text-cheese mb-6">
           05 — THE EXPERIENCE
         </p>
-        <h2 className="flow-heading text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-20 leading-tight max-w-3xl">
+        <h2 className="reveal text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-20 leading-tight max-w-3xl" style={{ transitionDelay: "80ms" }}>
           Five steps.{" "}
           <span className="text-cream/40">From seat to satisfaction.</span>
         </h2>
@@ -66,11 +52,11 @@ export default function HowItWorksSection() {
           {/* Background timeline rail (desktop only) */}
           <div className="absolute top-8 left-8 right-8 h-px bg-ash hidden md:block" />
           {/* Animated gradient fill */}
-          <div className="flow-line-fill absolute top-8 left-8 right-8 h-px bg-gradient-to-r from-ember via-cheese to-tomato origin-left hidden md:block" />
+          <div className="reveal-line absolute top-8 left-8 right-8 h-px bg-gradient-to-r from-ember via-cheese to-tomato hidden md:block" style={{ transitionDelay: "200ms" }} />
 
           <div className="grid md:grid-cols-5 gap-10 md:gap-4">
             {STEPS.map(({ n, icon: Icon, title, desc }, i) => (
-              <div key={n} className="step-item relative">
+              <div key={n} className="reveal relative" style={{ transitionDelay: `${i * 80}ms` }}>
                 <div className="relative z-10 w-16 h-16 rounded-full bg-glass border-2 border-ember flex items-center justify-center text-ember mb-5 mx-auto md:mx-0 shadow-lg shadow-ember/20">
                   <Icon className="w-6 h-6" aria-hidden />
                 </div>

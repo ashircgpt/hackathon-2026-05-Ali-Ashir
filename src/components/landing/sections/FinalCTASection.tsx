@@ -8,27 +8,9 @@ export default function FinalCTASection() {
   const sectionRef = useRef<HTMLElement>(null);
   const router = useRouter();
 
+  // Continuous GSAP animations (no ScrollTrigger)
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.from(".cta-reveal", {
-        y: 50,
-        opacity: 0,
-        duration: 1,
-        stagger: 0.15,
-        ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 70%", once: true },
-      });
-      gsap.fromTo(
-        ".cta-pizza-wrap",
-        { scale: 0.7, opacity: 0 },
-        {
-          scale: 1,
-          opacity: 1,
-          duration: 1.4,
-          ease: "back.out(1.4)",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 70%", once: true },
-        },
-      );
       gsap.to(".cta-pizza-img", {
         rotation: 360,
         duration: 50,
@@ -54,13 +36,33 @@ export default function FinalCTASection() {
     return () => ctx.revert();
   }, []);
 
+  // Scroll entrance via IntersectionObserver
+  useEffect(() => {
+    if (!sectionRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -60px 0px" },
+    );
+    sectionRef.current
+      .querySelectorAll(".reveal, .reveal-scale")
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
       ref={sectionRef}
       className="relative min-h-screen flex items-center justify-center px-6 py-32 overflow-hidden"
     >
       {/* Massive pizza disc behind text */}
-      <div className="cta-pizza-wrap absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] md:w-[680px] md:h-[680px] pointer-events-none">
+      <div className="reveal-scale cta-pizza-wrap absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] md:w-[680px] md:h-[680px] pointer-events-none">
         <div className="cta-glow absolute inset-0 rounded-full bg-ember/50 blur-3xl opacity-50" />
         <div className="cta-pizza-img relative w-full h-full rounded-full overflow-hidden border-2 border-ember/40 opacity-50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -76,20 +78,21 @@ export default function FinalCTASection() {
 
       {/* Foreground text + CTA */}
       <div className="relative z-10 text-center max-w-3xl">
-        <p className="cta-reveal text-[10px] md:text-xs font-mono uppercase tracking-[0.35em] text-cheese mb-6">
+        <p className="reveal text-[10px] md:text-xs font-mono uppercase tracking-[0.35em] text-cheese mb-6">
           06 — YOUR TURN
         </p>
-        <h2 className="cta-reveal text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
+        <h2 className="reveal text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight" style={{ transitionDelay: "80ms" }}>
           Your table is set.
           <br />
           <span className="text-gradient-pizza">Your pizza awaits.</span>
         </h2>
-        <p className="cta-reveal text-lg md:text-xl text-cream/70 mb-12 max-w-xl mx-auto leading-relaxed">
+        <p className="reveal text-lg md:text-xl text-cream/70 mb-12 max-w-xl mx-auto leading-relaxed" style={{ transitionDelay: "160ms" }}>
           Step into the future of dining. One tap, and the experience begins.
         </p>
         <button
           onClick={() => router.push("/table/1")}
-          className="cta-reveal cta-button group inline-flex items-center gap-3 bg-ember text-void rounded-full px-10 py-5 text-lg md:text-xl font-bold hover:bg-cheese hover:scale-105 transition-all shadow-2xl focus:outline-none focus:ring-2 focus:ring-ember focus:ring-offset-2 focus:ring-offset-void"
+          className="reveal cta-button group inline-flex items-center gap-3 bg-ember text-void rounded-full px-10 py-5 text-lg md:text-xl font-bold hover:bg-cheese hover:scale-105 transition-all shadow-2xl focus:outline-none focus:ring-2 focus:ring-ember focus:ring-offset-2 focus:ring-offset-void"
+          style={{ transitionDelay: "240ms" }}
         >
           Let&apos;s Build Your Pizza
           <svg
@@ -107,7 +110,7 @@ export default function FinalCTASection() {
             />
           </svg>
         </button>
-        <p className="cta-reveal text-xs md:text-sm text-cream/40 mt-6 font-mono">
+        <p className="reveal text-xs md:text-sm text-cream/40 mt-6 font-mono" style={{ transitionDelay: "320ms" }}>
           Tap to begin your Pizza3.14 experience
         </p>
       </div>
