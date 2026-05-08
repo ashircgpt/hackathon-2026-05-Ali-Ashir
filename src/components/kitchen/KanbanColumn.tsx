@@ -36,15 +36,21 @@ interface KanbanColumnProps {
 }
 
 export default function KanbanColumn({ status, orders, onAdvance }: KanbanColumnProps) {
+  const isServed = status === "SERVED";
+  // SERVED column accepts drops (drag READY → SERVED is valid), but is not a drag source
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
     <div
       ref={setNodeRef}
       className={`
-        flex flex-col flex-1 min-w-0 rounded-xl border bg-glass/50 overflow-hidden
-        transition-shadow
-        ${isOver ? `${STATUS_GLOW[status]} border-opacity-60` : "border-ash"}
+        flex flex-col flex-1 min-w-0 rounded-xl border overflow-hidden transition-all
+        ${isServed
+          ? "bg-void/20 border-ash/40 opacity-80"
+          : isOver
+            ? `bg-glass/50 ${STATUS_GLOW[status]} border-opacity-60`
+            : "bg-glass/50 border-ash"
+        }
       `}
     >
       {/* Column header */}
@@ -53,7 +59,10 @@ export default function KanbanColumn({ status, orders, onAdvance }: KanbanColumn
         style={{ borderColor: STATUS_COLORS[status] }}
       >
         <div className="flex items-center justify-between">
-          <span className="uppercase tracking-widest text-[11px] text-smoke font-semibold">
+          <span
+            className={`uppercase tracking-widest text-[11px] font-semibold
+              ${isServed ? "text-smoke/60" : "text-smoke"}`}
+          >
             {STATUS_LABELS[status]}
           </span>
           <span

@@ -2,15 +2,28 @@
 // SERVER-ONLY — do not import in Client Components.
 // Initialized once via initSocketServer() called from server.ts.
 // API routes call getIO() to emit events.
+//
+// Uses global cache (same pattern as Prisma singleton) so hot-reload in Next.js
+// dev mode does NOT reset the instance — if the module is re-evaluated, we pick
+// up the already-running Socket.io server from `global` instead of creating a
+// new one or throwing.
 
 import { Server as SocketIOServer } from "socket.io";
 import type { Server as HTTPServer } from "http";
 
+// Module-level ref (fast path within the same require cycle)
 let io: SocketIOServer | null = null;
+
+// Global cache that survives Next.js hot-module replacement
+const g = global as unknown as { __socketIO?: SocketIOServer };
 
 /** Initialize Socket.io and attach to the Node HTTP server. Call once from server.ts. */
 export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
-  if (io) return io;
+  // Reuse if already running (guard against hot-reload re-initialization)
+  if (g.__socketIO) {
+    io = g.__socketIO;
+    return io;
+  }
 
   io = new SocketIOServer(httpServer, {
     cors: {
@@ -19,6 +32,9 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     },
     // Default path /socket.io — no custom path needed since we use a custom server
   });
+
+  // Persist on global so hot-reload picks it up without re-attaching
+  g.__socketIO = io;
 
   io.on("connection", (socket) => {
     // Customer table joins its own room
@@ -30,6 +46,11 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
     // Kitchen staff joins the shared kitchen room
     socket.on("join-kitchen", () => {
       socket.join("kitchen");
+    });
+
+    // Admin dashboard joins the shared admin room
+    socket.on("join-admin", () => {
+      socket.join("admin");
     });
 
     // Explicit leave (optional — Socket.io auto-cleans on disconnect)
@@ -48,14 +69,16 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
 
 /**
  * Get the shared Socket.io server instance.
- * Throws if called before initSocketServer() — guards against accidental use
- * without the custom server (e.g., in test environments).
+ * Falls back to the global cache so hot-reloaded modules still work.
  */
 export function getIO(): SocketIOServer {
-  if (!io) {
+  const instance = io ?? g.__socketIO;
+  if (!instance) {
     throw new Error(
       "Socket.io not initialized. Did you start the app via server.ts?",
     );
   }
-  return io;
+  // Refresh module-level ref from global in case this module was hot-reloaded
+  if (!io) io = instance;
+  return instance;
 }

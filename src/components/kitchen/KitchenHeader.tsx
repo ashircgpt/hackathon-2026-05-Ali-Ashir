@@ -48,6 +48,9 @@ export default function KitchenHeader({ counts, todayTotal }: KitchenHeaderProps
           Ready <span className="text-status-ready font-bold ml-1">{counts.READY}</span>
         </span>
         <span className="text-smoke">
+          Served <span className="text-smoke font-bold ml-1">{counts.SERVED}</span>
+        </span>
+        <span className="text-smoke">
           Today <span className="text-foreground font-bold ml-1">{todayTotal}</span>
         </span>
       </div>

@@ -79,7 +79,7 @@ export async function PATCH(
     select: { id: true, status: true, tableId: true },
   });
 
-  // Notify kitchen and customer via Socket.io
+  // Notify kitchen, customer table, and admin via Socket.io
   try {
     const io = getIO();
     io.to("kitchen").emit("order-advance", { orderId: id, status: nextStatus });
@@ -87,6 +87,7 @@ export async function PATCH(
       orderId: id,
       status: nextStatus,
     });
+    io.to("admin").emit("order-advance", { orderId: id, status: nextStatus });
   } catch {
     // Socket.io not initialized — graceful degradation
   }

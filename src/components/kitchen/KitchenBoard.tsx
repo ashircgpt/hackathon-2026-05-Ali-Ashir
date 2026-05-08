@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { DndContext, type DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import gsap from "gsap";
 import type { Order, OrderStatus } from "@/types";
+import { getSocket, disconnectSocket } from "@/lib/socket-client";
 import KanbanColumn from "./KanbanColumn";
 import KitchenHeader from "./KitchenHeader";
 
@@ -24,7 +25,7 @@ export default function KitchenBoard() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch("/api/orders?today=true&exclude=SERVED");
+      const res = await fetch("/api/orders?today=true");
       const json = await res.json();
       if (json.success) {
         const todays = (json.data as Order[]).filter((o) => isToday(o.createdAt));
@@ -36,11 +37,53 @@ export default function KitchenBoard() {
     }
   }, []);
 
+  // Polling fallback (4s) — keeps board in sync even if socket drops
   useEffect(() => {
     fetchOrders();
     const id = setInterval(fetchOrders, 4_000);
     return () => clearInterval(id);
   }, [fetchOrders]);
+
+  // Socket.io — real-time updates (instant, no poll delay)
+  useEffect(() => {
+    const socket = getSocket();
+
+    function joinKitchen() {
+      socket.emit("join-kitchen");
+    }
+
+    // New order placed by a customer → prepend to board
+    function onOrderNew(order: Order) {
+      if (!isToday(order.createdAt)) return;
+      setOrders((prev) => {
+        if (prev.some((o) => o.id === order.id)) return prev; // deduplicate
+        const next = [order, ...prev];
+        ordersRef.current = next;
+        return next;
+      });
+    }
+
+    // Kitchen advances an order on another terminal (or server confirms advance)
+    function onOrderAdvance({ orderId, status }: { orderId: number; status: OrderStatus }) {
+      setOrders((prev) => {
+        const next = prev.map((o) => (o.id === orderId ? { ...o, status } : o));
+        ordersRef.current = next;
+        return next;
+      });
+    }
+
+    joinKitchen(); // join immediately
+    socket.on("connect", joinKitchen); // re-join after any reconnect
+    socket.on("order-new", onOrderNew);
+    socket.on("order-advance", onOrderAdvance);
+
+    return () => {
+      socket.off("connect", joinKitchen);
+      socket.off("order-new", onOrderNew);
+      socket.off("order-advance", onOrderAdvance);
+      disconnectSocket();
+    };
+  }, []);
 
   async function advanceOrder(orderId: number) {
     const order = ordersRef.current.find((o) => o.id === orderId);
@@ -52,17 +95,15 @@ export default function KitchenBoard() {
     // Optimistic update
     const prev = ordersRef.current;
     const updated = prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o));
-    // Filter out SERVED from board
-    const filtered = updated.filter((o) => o.status !== "SERVED");
-    setOrders(filtered);
-    ordersRef.current = filtered;
+    setOrders(updated);
+    ordersRef.current = updated;
 
     try {
       const res = await fetch(`/api/orders/${orderId}/status`, { method: "PATCH" });
       if (!res.ok) throw new Error("advance failed");
     } catch {
       // Revert on failure
-      setOrders(prev.filter((o) => o.status !== "SERVED"));
+      setOrders(prev);
       ordersRef.current = prev;
     }
   }
@@ -94,14 +135,14 @@ export default function KitchenBoard() {
 
   // Split orders by status
   const byStatus = (status: OrderStatus) => orders.filter((o) => o.status === status);
-  const todayTotal = orders.length; // SERVED already excluded; total visible is active
+  const todayTotal = orders.length;
 
   const counts: Record<OrderStatus, number> = {
     NEW:       byStatus("NEW").length,
     PREPARING: byStatus("PREPARING").length,
     BAKING:    byStatus("BAKING").length,
     READY:     byStatus("READY").length,
-    SERVED:    0,
+    SERVED:    byStatus("SERVED").length,
   };
 
   return (
@@ -109,7 +150,7 @@ export default function KitchenBoard() {
       <KitchenHeader counts={counts} todayTotal={todayTotal} />
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="flex gap-3 p-4 flex-1 overflow-hidden min-h-0">
-          {(["NEW", "PREPARING", "BAKING", "READY"] as OrderStatus[]).map((status) => (
+          {(["NEW", "PREPARING", "BAKING", "READY", "SERVED"] as OrderStatus[]).map((status) => (
             <KanbanColumn
               key={status}
               status={status}

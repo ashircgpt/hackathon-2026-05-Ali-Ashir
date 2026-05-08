@@ -229,9 +229,11 @@ export async function POST(req: NextRequest) {
     include: ORDER_INCLUDE,
   });
 
-  // Notify kitchen via Socket.io (silently skip if server not running custom server)
+  // Notify kitchen + admin via Socket.io (silently skip if server not running custom server)
   try {
-    getIO().to("kitchen").emit("order-new", order);
+    const io = getIO();
+    io.to("kitchen").emit("order-new", order);
+    io.to("admin").emit("order-new", order);
   } catch {
     // Socket.io not initialized — graceful degradation (falls back to polling)
   }

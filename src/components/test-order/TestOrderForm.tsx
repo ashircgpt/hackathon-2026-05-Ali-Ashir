@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { computeTotals } from "@/lib/nutrition";
 import { getSocket, disconnectSocket } from "@/lib/socket-client";
 import type {
@@ -40,8 +40,6 @@ export default function TestOrderForm({ tableId }: Props) {
   const [loading, setLoading] = useState(false);
   const [menuError, setMenuError] = useState<string | null>(null);
   const tableNum = parseInt(tableId, 10) || 1;
-  const socketBound = useRef(false);
-
   // Fetch menu on mount
   useEffect(() => {
     fetch("/api/menu")
@@ -53,12 +51,16 @@ export default function TestOrderForm({ tableId }: Props) {
       .catch(() => setMenuError("Failed to load menu."));
   }, []);
 
-  // Socket.io — listen for status updates after order is placed
+  // Socket.io — join table room and listen for live status pushes
+  // Runs whenever orderId changes (null → number on place, number → null on reset)
   useEffect(() => {
-    if (!orderId || socketBound.current) return;
-    socketBound.current = true;
+    if (!orderId) return;
     const socket = getSocket();
-    socket.emit("join-table", tableNum);
+
+    function joinRoom() {
+      socket.emit("join-table", tableNum);
+    }
+
     const handler = ({
       orderId: incoming,
       status,
@@ -68,13 +70,19 @@ export default function TestOrderForm({ tableId }: Props) {
     }) => {
       if (incoming === orderId) setOrderStatus(status);
     };
+
+    joinRoom(); // join immediately (also covers already-connected socket)
+    socket.on("connect", joinRoom); // re-join after any reconnect
     socket.on("order-status-update", handler);
+
     return () => {
+      socket.off("connect", joinRoom);
       socket.off("order-status-update", handler);
+      socket.emit("leave-table", tableNum);
     };
   }, [orderId, tableNum]);
 
-  // Disconnect socket on unmount
+  // Disconnect socket cleanly on page unmount
   useEffect(() => () => disconnectSocket(), []);
 
   // Derived values
@@ -138,7 +146,6 @@ export default function TestOrderForm({ tableId }: Props) {
     setOrderId(null);
     setOrderStatus(null);
     setError(null);
-    socketBound.current = false;
   }
 
   const currentStepIndex = orderStatus

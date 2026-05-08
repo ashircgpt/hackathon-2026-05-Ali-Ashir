@@ -172,3 +172,58 @@ Format:
 **Notes:** Zero ESLint warnings. Reuses `computeTotals()`, `getSocket()`, all existing types. No new dependencies. Model: Sonnet.
 
 ---
+
+### [2026-05-08] — Admin module: FeedbackSection + SettingsSection + layout fix
+
+**Prompt:** "make sure you complete the admin functionality + also upgrade the UI as per the theme"
+
+**Files affected:**
+- NEW: `src/components/admin/FeedbackSection.tsx` — blockchain ledger viewer; fetches `GET /api/admin/feedback`; GSAP stagger timeline (120ms per block) flashes borders green (valid) / red (tampered) on "Verify Chain"; `verifyChain()` from `hash-browser.ts`; truncated hashes (10+8 chars); result banner; block cards with quoted content + 3-col hash grid
+- NEW: `src/components/admin/SettingsSection.tsx` — system status panel; live Socket.io connected/disconnected dot via `connect`/`disconnect` events; DB always "Connected"; credential reveal toggles (kitchen_demo / admin_demo); auth config grid (cookie names, routes, middleware runtime)
+- NEW: `src/components/admin/AdminSidebar.tsx` — dark-theme nav with correct routes (overview/orders/menu/feedback/settings)
+- NEW: `src/components/admin/OverviewSection.tsx` — stats dashboard with Recharts area/bar/pie charts, countUp animation, hourly breakdown, top combo display
+- NEW: `src/components/admin/OrdersSection.tsx` — filterable order table with status filter bar, today-only toggle, expandable row detail
+- NEW: `src/components/admin/MenuSection.tsx` — menu management table
+- NEW: `src/app/admin/overview/page.tsx`, `src/app/admin/settings/page.tsx` — thin page shells
+- MODIFIED: `src/app/admin/layout.tsx` — fixed wrong sidebar import (`@/components/layout/AdminSidebar` → `@/components/admin/AdminSidebar`), corrected bg tokens (`bg-background` → `bg-void text-cream`)
+- MODIFIED: `src/app/admin/feedback/page.tsx`, `orders/page.tsx`, `menu/page.tsx`, `page.tsx` — refactored to thin shells delegating to section components
+
+**Notes:** Zero ESLint warnings. GSAP cleanup via `tl.kill()` in useEffect return stored in ref. `verifyChain` extended type `FeedbackWithOrder` adds nested `order?: { id, tableId }`. Model: Sonnet.
+
+---
+
+### [2026-05-08] — Kitchen SERVED column added
+
+**Prompt:** "there is no served card on kitchen dashboard? how are you managing this served flow? you dont think that we should have served in kitchen module?"
+
+**Files affected:**
+- `src/components/kitchen/KitchenBoard.tsx` — fetch now includes SERVED orders (`?today=true` without exclude); added SERVED to column list and counts; Socket.io `join-kitchen` + `order-new` + `order-advance` event wiring (was completely missing)
+- `src/components/kitchen/KanbanColumn.tsx` — SERVED column gets muted visual treatment (bg-void/20, border-ash/40, opacity-80, header text-smoke/60)
+- `src/components/kitchen/OrderCard.tsx` — SERVED cards: `useDraggable({ disabled: isServed })`, no listeners/attributes, no Advance button, "✓ Done" label, opacity-50 cursor-default styling; no UrgencyBar
+- `src/components/kitchen/KitchenHeader.tsx` — added "Served N" count to stats bar
+
+**Notes:** Kitchen staff marks READY→SERVED by clicking Advance (drag also works). SERVED cards are read-only. Model: Sonnet.
+
+---
+
+### [2026-05-08] — Socket.io audit: hot-reload singleton fix + customer table room rejoin + admin real-time
+
+**Prompt:** "test the socket.io functionality through preview. make it perfectly working on each module and audit it as well." / "I have placed an order from table form — on runtime it gets listed in kitchen kanban but when I switch the state from kitchen module my table didn't update the live status. Also my admin module didn't update the order number or etc on runtime. Maybe socket.io is not working — audit and fix this."
+
+**Root causes found:**
+1. **Hot-reload singleton reset** — `let io: SocketIOServer | null = null` in `socket-server.ts` resets to `null` every time Next.js hot-reloads the module (on any file save). All `getIO()` calls then throw; `catch {}` silently swallows them → zero socket events emitted from any API route.
+2. **Customer table room lost on reconnect** — `join-table` only emitted once; if socket disconnected/reconnected (server restart, network hiccup), client was no longer in the room.
+3. **Admin had no real-time at all** — `OverviewSection` and `OrdersSection` fetched once on mount, never again. No socket, no polling.
+
+**Files affected:**
+- `src/lib/socket-server.ts` — applied `global.__socketIO` singleton pattern (same as Prisma) so hot-reload picks up the existing server instance; added `join-admin` room handler; `getIO()` now falls back to `g.__socketIO` before throwing
+- `src/app/api/orders/route.ts` — `POST` now also emits `order-new` to `admin` room
+- `src/app/api/orders/[id]/status/route.ts` — `PATCH` now also emits `order-advance` to `admin` room
+- `src/components/test-order/TestOrderForm.tsx` — replaced single `joinRoom()` call with `joinRoom()` + `socket.on("connect", joinRoom)` so room is re-joined after any reconnect; added `leave-table` on cleanup
+- `src/components/kitchen/KitchenBoard.tsx` — same reconnect pattern: `joinKitchen()` + `socket.on("connect", joinKitchen)`
+- `src/components/admin/OverviewSection.tsx` — added `join-admin` socket room; listens for `order-new`/`order-advance` → debounced stats refresh (500ms); 15-second polling fallback
+- `src/components/admin/OrdersSection.tsx` — added `join-admin` socket room; listens for `order-new`/`order-advance` → debounced order-list refresh (400ms); 8-second polling fallback; `filterRef` pattern avoids stale closures in socket callbacks
+
+**Notes:** Zero ESLint warnings. All three modules now receive real-time updates. Polling fallbacks ensure data stays fresh even if socket misses an event. Model: Sonnet.
+
+---

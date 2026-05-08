@@ -14,8 +14,10 @@ interface OrderCardProps {
 
 export default function OrderCard({ order, onAdvance }: OrderCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const isServed = order.status === "SERVED";
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: order.id,
+    disabled: isServed,
   });
 
   // Combine dnd-kit setNodeRef with our cardRef
@@ -44,12 +46,17 @@ export default function OrderCard({ order, onAdvance }: OrderCardProps) {
     <div
       ref={refCallback}
       style={style}
-      {...listeners}
-      {...attributes}
+      {...(!isServed ? listeners : {})}
+      {...(!isServed ? attributes : {})}
+      data-order-id={order.id}
       className={`
-        rounded-lg border p-3 bg-glass cursor-grab active:cursor-grabbing select-none
-        transition-shadow
-        ${isDragging ? "scale-[1.03] shadow-2xl border-ember z-50 opacity-90" : "border-ash"}
+        rounded-lg border p-3 bg-glass select-none transition-all
+        ${isServed
+          ? "opacity-50 cursor-default border-ash/50"
+          : isDragging
+            ? "scale-[1.03] shadow-2xl border-ember z-50 opacity-90 cursor-grabbing"
+            : "cursor-grab active:cursor-grabbing border-ash"
+        }
         ${isReady ? "glow-ready border-status-ready" : ""}
       `}
     >
@@ -58,8 +65,8 @@ export default function OrderCard({ order, onAdvance }: OrderCardProps) {
         #{order.id} · TABLE {order.tableId}
       </p>
 
-      {/* Urgency bar */}
-      <UrgencyBar createdAt={order.createdAt} />
+      {/* Urgency bar — hide for served */}
+      {!isServed && <UrgencyBar createdAt={order.createdAt} />}
 
       {/* Ingredient list */}
       <p className="text-xs text-smoke line-clamp-2 mb-2">{ingredientNames}</p>
@@ -69,16 +76,23 @@ export default function OrderCard({ order, onAdvance }: OrderCardProps) {
         <span className="font-mono text-ember text-sm font-semibold">
           ${order.totalPrice.toFixed(2)}
         </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAdvance(order.id);
-          }}
-          className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-ash text-foreground/80 hover:bg-ember hover:text-void transition-colors focus:outline-none focus:ring-1 focus:ring-ember"
-          aria-label={`Advance order ${order.id}`}
-        >
-          Advance →
-        </button>
+        {!isServed && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdvance(order.id);
+            }}
+            className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-ash text-foreground/80 hover:bg-ember hover:text-void transition-colors focus:outline-none focus:ring-1 focus:ring-ember"
+            aria-label={`Advance order ${order.id}`}
+          >
+            Advance →
+          </button>
+        )}
+        {isServed && (
+          <span className="text-[11px] font-mono text-smoke/60 px-2.5 py-1">
+            ✓ Done
+          </span>
+        )}
       </div>
     </div>
   );
