@@ -82,6 +82,16 @@ Format:
 
 ---
 
+### [2026-05-08] — M6: Asset audit, seed alignment, GSAP install, DB reset
+
+**Prompt:** "lets move as per M6 — asset audit. There is only one picture in cheese so there should be two at least so add one there."
+
+**Files affected:** public/assets/pizza/cheese/mozzarella.jpg (new — copy of cheddar as placeholder), prisma/seed.ts (imageUrls updated from /layers/*.png → /assets/pizza/…/*.jpg; menu items trimmed to 15 to match actual assets: 3 BASE, 3 SAUCE, 2 CHEESE, 7 TOPPING; removed Pesto/Garlic Cream/Vegan Cheese which had no images; added Chicken Chunks id:17; renamed Bell Peppers→Capsicum, Pineapple→Onions; updated orders 5+6 to use valid item IDs), package.json + package-lock.json (gsap@3.15.0, @gsap/react@2.1.2 installed)
+
+**Notes:** `npm run db:reset` ran successfully — migration reapplied, 15 menu items + 8 orders + 2 feedback blocks seeded. Sequences reset. Famous combo still works (ids 1,4,8,11,12). EPERM DLL rename warning on Windows is a known Prisma/Windows noise — seed completed fine. Model: Sonnet.
+
+---
+
 ### [2026-05-08] — Backend build: complete API layer + Socket.io + Swagger
 
 **Prompt:** "First I want you to plan and build the backend first — build all the needed APIs which would be needed by frontend's all three modules. Also add Swagger implementation to the APIs as well."

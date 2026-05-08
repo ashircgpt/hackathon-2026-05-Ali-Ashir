@@ -13,7 +13,8 @@ function sha256(input: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Menu items — 3 BASE, 4 SAUCE, 3 CHEESE, 6 TOPPING
+// Menu items — 3 BASE, 3 SAUCE, 2 CHEESE, 7 TOPPING  (15 total)
+// imageUrls match files under public/assets/pizza/
 // ---------------------------------------------------------------------------
 
 const MENU_ITEMS = [
@@ -22,7 +23,7 @@ const MENU_ITEMS = [
     id: 1,
     name: "Classic Dough",
     layerType: LayerType.BASE,
-    imageUrl: "/layers/classic-dough.png",
+    imageUrl: "/assets/pizza/bases/1.jpg",
     price: 3.0,
     calories: 220,
     protein: 7.0,
@@ -34,7 +35,7 @@ const MENU_ITEMS = [
     id: 2,
     name: "Whole Wheat Crust",
     layerType: LayerType.BASE,
-    imageUrl: "/layers/whole-wheat-crust.png",
+    imageUrl: "/assets/pizza/bases/2.jpg",
     price: 3.5,
     calories: 200,
     protein: 9.0,
@@ -46,7 +47,7 @@ const MENU_ITEMS = [
     id: 3,
     name: "Cauliflower Crust",
     layerType: LayerType.BASE,
-    imageUrl: "/layers/cauliflower-crust.png",
+    imageUrl: "/assets/pizza/bases/3.jpg",
     price: 4.0,
     calories: 120,
     protein: 5.0,
@@ -57,9 +58,9 @@ const MENU_ITEMS = [
   // SAUCE
   {
     id: 4,
-    name: "Marinara",
+    name: "Tomato Sauce",
     layerType: LayerType.SAUCE,
-    imageUrl: "/layers/marinara.png",
+    imageUrl: "/assets/pizza/sauces/tomatto.jpg",
     price: 1.0,
     calories: 45,
     protein: 2.0,
@@ -69,149 +70,137 @@ const MENU_ITEMS = [
   },
   {
     id: 5,
-    name: "Pesto",
-    layerType: LayerType.SAUCE,
-    imageUrl: "/layers/pesto.png",
-    price: 1.5,
-    calories: 90,
-    protein: 3.0,
-    fats: 7.0,
-    carbs: 4.0,
-    sortOrder: 5,
-  },
-  {
-    id: 6,
     name: "BBQ Sauce",
     layerType: LayerType.SAUCE,
-    imageUrl: "/layers/bbq-sauce.png",
+    imageUrl: "/assets/pizza/sauces/bbq.jpg",
     price: 1.0,
     calories: 60,
     protein: 1.0,
     fats: 0.0,
     carbs: 14.0,
-    sortOrder: 6,
+    sortOrder: 5,
   },
   {
-    id: 7,
-    name: "Garlic Cream",
+    id: 6,
+    name: "Spicy Sauce",
     layerType: LayerType.SAUCE,
-    imageUrl: "/layers/garlic-cream.png",
+    imageUrl: "/assets/pizza/sauces/spicy.jpg",
     price: 1.5,
-    calories: 110,
-    protein: 2.0,
-    fats: 9.0,
-    carbs: 5.0,
-    sortOrder: 7,
+    calories: 55,
+    protein: 1.0,
+    fats: 2.0,
+    carbs: 9.0,
+    sortOrder: 6,
   },
   // CHEESE
   {
     id: 8,
     name: "Mozzarella",
     layerType: LayerType.CHEESE,
-    imageUrl: "/layers/mozzarella.png",
+    imageUrl: "/assets/pizza/cheese/mozzarella.jpg",
     price: 2.0,
     calories: 160,
     protein: 11.0,
     fats: 12.0,
     carbs: 1.0,
-    sortOrder: 8,
-  },
-  {
-    id: 9,
-    name: "Vegan Cheese",
-    layerType: LayerType.CHEESE,
-    imageUrl: "/layers/vegan-cheese.png",
-    price: 2.5,
-    calories: 130,
-    protein: 7.0,
-    fats: 9.0,
-    carbs: 5.0,
-    sortOrder: 9,
+    sortOrder: 7,
   },
   {
     id: 10,
     name: "Double Cheddar",
     layerType: LayerType.CHEESE,
-    imageUrl: "/layers/double-cheddar.png",
+    imageUrl: "/assets/pizza/cheese/cheddar_cheese.jpg",
     price: 2.5,
     calories: 220,
     protein: 14.0,
     fats: 18.0,
     carbs: 1.0,
-    sortOrder: 10,
+    sortOrder: 8,
   },
   // TOPPING
   {
     id: 11,
     name: "Pepperoni",
     layerType: LayerType.TOPPING,
-    imageUrl: "/layers/pepperoni.png",
+    imageUrl: "/assets/pizza/toppings/peperonis.jpg",
     price: 2.0,
     calories: 130,
     protein: 6.0,
     fats: 11.0,
     carbs: 1.0,
-    sortOrder: 11,
+    sortOrder: 9,
   },
   {
     id: 12,
     name: "Mushrooms",
     layerType: LayerType.TOPPING,
-    imageUrl: "/layers/mushrooms.png",
+    imageUrl: "/assets/pizza/toppings/mushrooms.jpg",
     price: 1.0,
     calories: 20,
     protein: 2.0,
     fats: 0.0,
     carbs: 3.0,
-    sortOrder: 12,
+    sortOrder: 10,
   },
   {
     id: 13,
-    name: "Bell Peppers",
+    name: "Capsicum",
     layerType: LayerType.TOPPING,
-    imageUrl: "/layers/bell-peppers.png",
+    imageUrl: "/assets/pizza/toppings/capsicum.jpg",
     price: 1.0,
     calories: 15,
     protein: 1.0,
     fats: 0.0,
     carbs: 3.0,
-    sortOrder: 13,
+    sortOrder: 11,
   },
   {
     id: 14,
     name: "Olives",
     layerType: LayerType.TOPPING,
-    imageUrl: "/layers/olives.png",
+    imageUrl: "/assets/pizza/toppings/olives.jpg",
     price: 1.0,
     calories: 35,
     protein: 0.0,
     fats: 3.0,
     carbs: 2.0,
-    sortOrder: 14,
+    sortOrder: 12,
   },
   {
     id: 15,
     name: "Jalapeños",
     layerType: LayerType.TOPPING,
-    imageUrl: "/layers/jalapenos.png",
+    imageUrl: "/assets/pizza/toppings/jalapenos.jpg",
     price: 0.75,
     calories: 10,
     protein: 0.0,
     fats: 0.0,
     carbs: 2.0,
-    sortOrder: 15,
+    sortOrder: 13,
   },
   {
     id: 16,
-    name: "Pineapple",
+    name: "Onions",
     layerType: LayerType.TOPPING,
-    imageUrl: "/layers/pineapple.png",
-    price: 1.0,
-    calories: 25,
+    imageUrl: "/assets/pizza/toppings/onions.jpg",
+    price: 0.75,
+    calories: 15,
     protein: 0.0,
     fats: 0.0,
-    carbs: 6.0,
-    sortOrder: 16,
+    carbs: 4.0,
+    sortOrder: 14,
+  },
+  {
+    id: 17,
+    name: "Chicken Chunks",
+    layerType: LayerType.TOPPING,
+    imageUrl: "/assets/pizza/toppings/chicken_chunks.jpg",
+    price: 2.5,
+    calories: 110,
+    protein: 14.0,
+    fats: 5.0,
+    carbs: 0.0,
+    sortOrder: 15,
   },
 ] as const;
 
@@ -246,7 +235,7 @@ function buildLayers(itemIds: number[]) {
 
 // ---------------------------------------------------------------------------
 // Order definitions
-// Most Famous Combo: Classic Dough(1) + Marinara(4) + Mozzarella(8) +
+// Most Famous Combo: Classic Dough(1) + Tomato Sauce(4) + Mozzarella(8) +
 //                   Pepperoni(11) + Mushrooms(12) — appears in orders 1, 2, 7
 // ---------------------------------------------------------------------------
 
@@ -294,7 +283,7 @@ const ORDERS: Array<{
     id: 5,
     tableId: 1,
     status: OrderStatus.READY,
-    itemIds: [1, 7, 8, 14, 13],
+    itemIds: [1, 5, 8, 14, 13],
     createdAt: new Date("2026-05-07T08:30:00.000Z"),
   },
   // Order 6 — READY
@@ -302,7 +291,7 @@ const ORDERS: Array<{
     id: 6,
     tableId: 2,
     status: OrderStatus.READY,
-    itemIds: [3, 4, 9, 12, 13],
+    itemIds: [3, 4, 10, 12, 13],
     createdAt: new Date("2026-05-07T08:40:00.000Z"),
   },
   // Order 7 — SERVED — Famous Combo ⭐ — has feedback (genesis block)
@@ -328,7 +317,7 @@ const ORDERS: Array<{
 // ---------------------------------------------------------------------------
 
 const FEEDBACK_CONTENT_1 = "Great pizza! The crust was perfectly crispy.";
-const FEEDBACK_CONTENT_2 = "Loved the Marinara sauce. Will definitely order again!";
+const FEEDBACK_CONTENT_2 = "Loved the Tomato sauce. Will definitely order again!";
 
 // Deterministic timestamps for reproducible hashes
 const FEEDBACK_TIMESTAMP_1 = new Date("2026-05-07T10:00:00.000Z");
@@ -429,7 +418,6 @@ async function main() {
   console.log(`     ${feedbackBlocks.length} feedback blocks seeded`);
 
   // Reset PostgreSQL sequences so app-created records don't collide with seed IDs.
-  // pg_get_serial_sequence is robust — works regardless of the exact sequence name.
   console.log("  → Resetting sequences...");
   await db.$executeRaw`SELECT setval(pg_get_serial_sequence('"MenuItem"', 'id'), MAX(id)) FROM "MenuItem"`;
   await db.$executeRaw`SELECT setval(pg_get_serial_sequence('"Order"', 'id'), MAX(id)) FROM "Order"`;
