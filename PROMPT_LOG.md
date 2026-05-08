@@ -82,6 +82,29 @@ Format:
 
 ---
 
+### [2026-05-08] — Landing page redesign: narrative scroll experience
+
+**Prompt:** "landing page should not be same like our proposed table ui... Welcome to Pizza 3.14(pi notation), intro to technology, restaurant, problems we are solving... user should get idea in interactive way not text only... color theme like pizza yellow cheesy... story-driven with outstanding UI... after scrolling lets-build button at the end."
+
+**Files affected:**
+- `tailwind.config.ts` — added 6 new pizza-warm tokens (cheese, cheese-dim, tomato, crust, basil, cream)
+- `src/app/globals.css` — added gradient text utilities (.text-gradient-pizza, .text-gradient-cheese), warm radial backgrounds (.bg-pizza-radial, .bg-tomato-radial), html smooth-scroll
+- `src/app/page.tsx` — wired to new LandingPage
+- DELETED: src/components/landing/AttractScreen.tsx, IngredientOrbitRing.tsx, ComboTopBanner.tsx, PizzaHeroDisc.tsx, PrimaryCTA.tsx (attract-screen concept replaced)
+- NEW: `src/components/landing/LandingPage.tsx` — root, registers GSAP ScrollTrigger plugin
+- NEW: `src/components/landing/Navbar.tsx` — sticky transparent → glass on scroll, "Pizza 3.14π" brand, anchor nav, "Start Building" CTA
+- NEW: `src/components/landing/sections/HeroSection.tsx` — full-viewport hero with bleeding pizza disc, floating ingredient particles, gradient title
+- NEW: `src/components/landing/sections/StorySection.tsx` — vision narrative + animated layered pizza visual
+- NEW: `src/components/landing/sections/ProblemSection.tsx` — 6 pain-point cards in tomato accent
+- NEW: `src/components/landing/sections/SolutionSection.tsx` — 3-pillar architecture (TABLE / KITCHEN / ADMIN) with gradient connector line
+- NEW: `src/components/landing/sections/FeaturesSection.tsx` — 6 feature cards with icon hover scale
+- NEW: `src/components/landing/sections/HowItWorksSection.tsx` — 5-step horizontal timeline (Sit → Build → Order → Watch → Verify) with animated gradient fill
+- NEW: `src/components/landing/sections/FinalCTASection.tsx` — dramatic close with rotating pizza, glow pulse, "Let's Build Your Pizza" button → /table/1
+
+**Notes:** All animations via GSAP + ScrollTrigger (registered once in LandingPage). Each section uses `gsap.context()` for cleanup. Numbered narrative arc (01–06). Build clean: `/` route is 26.8 kB. Model: Sonnet (under Opus model selection).
+
+---
+
 ### [2026-05-08] — M6A + M6B: Landing attract screen + Kitchen Kanban board
 
 **Prompt:** "now lets move to the next... i want to complete the rest like kitchen kanban frontend first then i will move to admin UI... landing page + kitchen frontend"

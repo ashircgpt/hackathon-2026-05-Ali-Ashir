@@ -47,6 +47,12 @@ const config: Config = {
         // Pizza3.14 design system tokens
         ember:           "hsl(24 95% 53%)",
         "ember-dim":     "hsl(24 60% 35%)",
+        cheese:          "hsl(42 92% 62%)",
+        "cheese-dim":    "hsl(42 70% 45%)",
+        tomato:          "hsl(8 75% 55%)",
+        crust:           "hsl(28 38% 22%)",
+        basil:           "hsl(135 45% 50%)",
+        cream:           "hsl(38 30% 92%)",
         void:            "hsl(240 10% 3%)",
         glass:           "hsl(240 8% 7%)",
         frost:           "hsl(240 6% 11%)",

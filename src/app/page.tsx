@@ -1,5 +1,5 @@
-import AttractScreen from "@/components/landing/AttractScreen";
+import LandingPage from "@/components/landing/LandingPage";
 
 export default function Home() {
-  return <AttractScreen />;
+  return <LandingPage />;
 }
