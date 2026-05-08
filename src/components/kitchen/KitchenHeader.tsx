@@ -19,10 +19,11 @@ function liveClock() {
 }
 
 export default function KitchenHeader({ counts, todayTotal }: KitchenHeaderProps) {
-  const [time, setTime] = useState(liveClock());
+  const [time, setTime] = useState("");
   const router = useRouter();
 
   useEffect(() => {
+    setTime(liveClock());
     const id = setInterval(() => setTime(liveClock()), 1000);
     return () => clearInterval(id);
   }, []);
