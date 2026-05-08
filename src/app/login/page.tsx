@@ -1,74 +1,141 @@
-import { Pizza, Lock } from "lucide-react";
-import { PageContainer } from "@/components/PageContainer";
-import { SectionCard } from "@/components/SectionCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+"use client";
 
-export const metadata = { title: "Login — Pizza3.14" };
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Lock, ChefHat, Settings2 } from "lucide-react";
 
-interface LoginPageProps {
-  searchParams: { from?: string };
-}
+export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
-  const destination = searchParams.from ?? "/admin";
-  const isKitchen = destination.startsWith("/kitchen");
+  const from = searchParams.get("from") ?? "/admin";
+  const isKitchen = from.startsWith("/kitchen");
+  const role = isKitchen ? "kitchen" : "admin";
+
+  const [passphrase, setPassphrase] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!passphrase.trim()) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passphrase: passphrase.trim(), role }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        router.push(from);
+      } else {
+        setError(data.message ?? "Invalid passphrase.");
+      }
+    } catch {
+      setError("Network error — please retry.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const RoleIcon = isKitchen ? ChefHat : Settings2;
+  const accentClass = isKitchen ? "text-cheese" : "text-ember";
+  const borderActive = isKitchen
+    ? "focus:border-cheese focus:ring-cheese/20"
+    : "focus:border-ember focus:ring-ember/20";
+  const btnClass = isKitchen
+    ? "bg-cheese hover:bg-amber-300 text-void"
+    : "bg-ember hover:bg-cheese text-void";
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-      <PageContainer width="narrow">
-        <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <Pizza className="h-8 w-8 text-primary" aria-hidden />
+    <div className="min-h-screen bg-void text-cream flex flex-col items-center justify-center px-4">
+      {/* Brand */}
+      <div className="mb-10 text-center">
+        <p className="text-[10px] font-mono uppercase tracking-[0.35em] text-smoke mb-3">
+          Pizza3.14π — Staff Access
+        </p>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+          Pizza{" "}
+          <span className="font-serif italic text-gradient-pizza">3.14π</span>
+        </h1>
+      </div>
+
+      {/* Card */}
+      <div className="w-full max-w-sm bg-glass border border-ash rounded-2xl p-8 shadow-2xl">
+        {/* Role header */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isKitchen ? "bg-cheese/15" : "bg-ember/15"}`}>
+            <RoleIcon className={`w-5 h-5 ${accentClass}`} aria-hidden />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Pizza<span className="text-primary">3.14</span>
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isKitchen ? "Kitchen access" : "Admin access"} required
-          </p>
+          <div>
+            <p className={`text-[10px] font-mono uppercase tracking-widest ${accentClass}`}>
+              {isKitchen ? "Kitchen" : "Admin"} Access
+            </p>
+            <p className="text-sm text-cream/60">Enter your passphrase</p>
+          </div>
         </div>
 
-        <SectionCard
-          title={isKitchen ? "Kitchen Login" : "Admin Login"}
-          description="Enter the demo passphrase to continue."
-          accented
-        >
-          {/* Form — wired to /api/auth/login in Milestone 3 */}
-          <form action="/api/auth/login" method="POST" className="space-y-4">
-            <input type="hidden" name="from" value={destination} />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label
+              htmlFor="passphrase"
+              className="block text-xs font-mono uppercase tracking-widest text-smoke mb-2"
+            >
+              <Lock className="inline w-3 h-3 mr-1.5 -mt-0.5" aria-hidden />
+              Passphrase
+            </label>
             <input
-              type="hidden"
-              name="role"
-              value={isKitchen ? "kitchen" : "admin"}
+              id="passphrase"
+              type="password"
+              value={passphrase}
+              onChange={(e) => {
+                setPassphrase(e.target.value);
+                setError(null);
+              }}
+              placeholder="Enter demo passphrase"
+              autoComplete="current-password"
+              required
+              className={`w-full bg-void border border-ash rounded-xl px-4 py-3 text-cream text-sm placeholder:text-smoke/50 outline-none transition-all focus:ring-2 ${borderActive} ${error ? "border-red-500" : ""}`}
             />
+          </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="passphrase">
-                <Lock className="mr-1.5 inline h-3.5 w-3.5" aria-hidden />
-                Passphrase
-              </Label>
-              <Input
-                id="passphrase"
-                name="passphrase"
-                type="password"
-                placeholder="Enter demo passphrase"
-                autoComplete="current-password"
-                required
-              />
-            </div>
+          {error && (
+            <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
 
-            <Button type="submit" className="w-full">
-              Continue to {isKitchen ? "Kitchen" : "Admin"}
-            </Button>
-          </form>
+          <button
+            type="submit"
+            disabled={loading || !passphrase.trim()}
+            className={`w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed ${btnClass}`}
+          >
+            {loading
+              ? "Verifying…"
+              : `Enter ${isKitchen ? "Kitchen" : "Admin"} →`}
+          </button>
+        </form>
 
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Demo credentials — not for production use.
-          </p>
-        </SectionCard>
-      </PageContainer>
+        <p className="mt-6 text-center text-[11px] text-cream/30 font-mono">
+          Demo credentials only — not for production.
+        </p>
+      </div>
+
+      {/* Switch role hint */}
+      <p className="mt-6 text-xs text-smoke">
+        Need{" "}
+        <a
+          href={`/login?from=${isKitchen ? "/admin" : "/kitchen"}`}
+          className={`underline underline-offset-2 ${accentClass} hover:opacity-80`}
+        >
+          {isKitchen ? "admin" : "kitchen"} access
+        </a>{" "}
+        instead?
+      </p>
     </div>
   );
 }
