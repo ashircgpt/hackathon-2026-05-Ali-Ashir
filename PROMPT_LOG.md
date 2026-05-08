@@ -82,6 +82,31 @@ Format:
 
 ---
 
+### [2026-05-08] — M6A + M6B: Landing attract screen + Kitchen Kanban board
+
+**Prompt:** "now lets move to the next... i want to complete the rest like kitchen kanban frontend first then i will move to admin UI... landing page + kitchen frontend"
+
+**Files affected:**
+- `tailwind.config.ts` — 11 new design tokens (ember, void, glass, frost, smoke, ash, status-*)
+- `src/app/globals.css` — 5 new glow utilities (.glow-ember, .glow-ready, .glow-baking, .glow-new, .text-glow)
+- `src/app/page.tsx` — replaced 140-line marketing page with thin shell → AttractScreen
+- `src/app/kitchen/page.tsx` — replaced hardcoded placeholder with thin shell → KitchenBoard
+- `src/components/landing/AttractScreen.tsx` (new) — h-screen attract screen, GSAP load sequence, idle slowdown
+- `src/components/landing/PizzaHeroDisc.tsx` (new) — rotating 380px pizza disc with glow, forwardRef speed control
+- `src/components/landing/IngredientOrbitRing.tsx` (new) — 6-ingredient SVG orbit ring, GSAP continuous rotation
+- `src/components/landing/ComboTopBanner.tsx` (new) — fetches /api/menu/famous-combo, GSAP slide-in
+- `src/components/landing/PrimaryCTA.tsx` (new) — CTA button with glow pulse, disc speed-up on hover
+- `src/components/kitchen/KitchenBoard.tsx` (new) — DndContext, 4s polling, drag-to-advance, optimistic updates
+- `src/components/kitchen/KitchenHeader.tsx` (new) — live clock, order counts, logout
+- `src/components/kitchen/KanbanColumn.tsx` (new) — useDroppable column, status glow on drag-over
+- `src/components/kitchen/OrderCard.tsx` (new) — useDraggable card, GSAP entry, urgency bar
+- `src/components/kitchen/UrgencyBar.tsx` (new) — time-based progress bar, CSS transition width
+- `src/components/kitchen/EmptyColumnState.tsx` (new) — empty placeholder
+
+**Notes:** Framer Motion not installed — all animations via GSAP + CSS transitions. ComboTopBanner uses /api/menu/famous-combo (public) not /api/admin/stats (requires cookie). Build clean, zero TypeScript/lint errors. Model: Sonnet.
+
+---
+
 ### [2026-05-08] — M6: Asset audit, seed alignment, GSAP install, DB reset
 
 **Prompt:** "lets move as per M6 — asset audit. There is only one picture in cheese so there should be two at least so add one there."
