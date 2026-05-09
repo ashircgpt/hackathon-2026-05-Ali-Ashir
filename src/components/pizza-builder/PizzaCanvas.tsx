@@ -10,9 +10,23 @@ import {
 import gsap from "gsap";
 import Image from "next/image";
 import { assignZIndexes } from "@/lib/layer-rules";
-import type { MenuItem } from "@/types";
+import type { MenuItem, LayerType } from "@/types";
 
 export type PizzaSize = "SMALL" | "MEDIUM" | "LARGE";
+
+// Per-layer-type rendering config.
+// containerInset: how far to pull each side in (% string). Keeps sauce/cheese within crust area
+// and makes toppings appear at realistic pizza proportions.
+// imageScale: additional CSS scale on the <img> itself — further shrinks toppings.
+const LAYER_CONFIG: Record<
+  LayerType,
+  { containerInset: string; imageScale?: number }
+> = {
+  BASE:    { containerInset: "0" },
+  SAUCE:   { containerInset: "5%" },
+  CHEESE:  { containerInset: "6%" },
+  TOPPING: { containerInset: "12%", imageScale: 0.75 },
+};
 
 const SIZE_SCALE: Record<PizzaSize, number> = {
   SMALL: 0.82,
@@ -263,26 +277,37 @@ const PizzaCanvas = forwardRef<PizzaCanvasHandle, Props>(function PizzaCanvas(
         )}
 
         {/* Stacked layers — opacity managed exclusively by GSAP */}
-        {stacked.map((item) => (
-          <div
-            key={item.id}
-            ref={(el) => {
-              if (el) layerRefs.current.set(item.id, el);
-              else layerRefs.current.delete(item.id);
-            }}
-            className="absolute inset-0"
-            style={{ zIndex: item.zIndex }}
-          >
-            <Image
-              src={item.imageUrl}
-              alt={`${item.name} layer`}
-              fill
-              sizes="440px"
-              className="object-contain pointer-events-none select-none"
-              priority={item.layerType === "BASE"}
-            />
-          </div>
-        ))}
+        {stacked.map((item) => {
+          const cfg = LAYER_CONFIG[item.layerType] ?? LAYER_CONFIG.TOPPING;
+          const inset = cfg.containerInset;
+          return (
+            <div
+              key={item.id}
+              ref={(el) => {
+                if (el) layerRefs.current.set(item.id, el);
+                else layerRefs.current.delete(item.id);
+              }}
+              className="absolute"
+              style={{
+                top: inset,
+                left: inset,
+                right: inset,
+                bottom: inset,
+                zIndex: item.zIndex,
+              }}
+            >
+              <Image
+                src={item.imageUrl}
+                alt={`${item.name} layer`}
+                fill
+                sizes="440px"
+                className="object-contain pointer-events-none select-none"
+                style={cfg.imageScale ? { transform: `scale(${cfg.imageScale})` } : undefined}
+                priority={item.layerType === "BASE"}
+              />
+            </div>
+          );
+        })}
 
         {/* Swipe hint overlay arrows */}
         {onSwipe && swipeHint && (

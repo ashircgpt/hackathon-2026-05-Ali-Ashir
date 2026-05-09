@@ -108,15 +108,25 @@ function CustomTooltip({ active, payload, label }: any) {
 export default function OverviewSection() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   // Track last socket-triggered refresh so rapid events don't spam the API
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function fetchStats() {
     fetch("/api/admin/stats")
-      .then((r) => r.json())
-      .then((res: ApiResponse<StatsData>) => {
-        if (res.success) setStats(res.data);
+      .then((r) => {
+        if (!r.ok) throw new Error(`Server error ${r.status}`);
+        return r.json();
       })
+      .then((res: ApiResponse<StatsData>) => {
+        if (res.success) {
+          setStats(res.data);
+          setFetchError(null);
+        } else {
+          setFetchError((res as { message?: string }).message ?? "Stats unavailable");
+        }
+      })
+      .catch((e: Error) => setFetchError(e.message))
       .finally(() => setLoading(false));
   }
 
@@ -180,6 +190,12 @@ export default function OverviewSection() {
           Live snapshot of today&apos;s operations.
         </p>
       </div>
+
+      {fetchError && (
+        <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-400">
+          Could not load stats: {fetchError}
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

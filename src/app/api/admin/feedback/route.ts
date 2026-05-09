@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ok } from "@/lib/api-response";
+import { ok, fail } from "@/lib/api-response";
 
 export const dynamic = "force-dynamic";
 
@@ -31,15 +31,20 @@ export const dynamic = "force-dynamic";
  *                     $ref: '#/components/schemas/Feedback'
  */
 export async function GET() {
-  const feedbackRows = await prisma.feedback.findMany({
-    include: {
-      order: {
-        include: {
-          layers: { include: { menuItem: true }, orderBy: { zIndex: "asc" } },
+  try {
+    const feedbackRows = await prisma.feedback.findMany({
+      include: {
+        order: {
+          include: {
+            layers: { include: { menuItem: true }, orderBy: { zIndex: "asc" } },
+          },
         },
       },
-    },
-    orderBy: { createdAt: "asc" }, // ascending preserves chain order
-  });
-  return ok(feedbackRows);
+      orderBy: { createdAt: "asc" },
+    });
+    return ok(feedbackRows);
+  } catch (err) {
+    console.error("[/api/admin/feedback] error:", err);
+    return fail("Failed to load feedback", [], 500);
+  }
 }

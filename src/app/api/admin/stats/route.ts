@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ok } from "@/lib/api-response";
+import { ok, fail } from "@/lib/api-response";
 import { computeTopCombo } from "@/lib/combo";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +30,7 @@ export const dynamic = "force-dynamic";
  *                   $ref: '#/components/schemas/AdminStats'
  */
 export async function GET() {
+  try {
   // Start of today (UTC midnight)
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
@@ -100,7 +101,7 @@ export async function GET() {
     totalRevenue,
     todayOrders,
     todayRevenue,
-    averageRating: null, // no stars field in schema — plain text feedback only
+    averageRating: null,
     verifiedFeedbackCount,
     ordersByStatus,
     hourlyBreakdown,
@@ -108,4 +109,8 @@ export async function GET() {
       ? { ingredients: topComboResult.ingredients, count: topComboResult.count }
       : null,
   });
+  } catch (err) {
+    console.error("[/api/admin/stats] error:", err);
+    return fail("Failed to load stats", [], 500);
+  }
 }
