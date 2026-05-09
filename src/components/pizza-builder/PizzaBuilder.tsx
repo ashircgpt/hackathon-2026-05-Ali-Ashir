@@ -15,11 +15,14 @@ import PizzaCanvas, {
   type PizzaCanvasHandle,
   type PizzaSize,
 } from "./PizzaCanvas";
+import RotatingOrbit from "./RotatingOrbit";
 import BuildStepper from "./BuildStepper";
 import DoughStep from "./DoughStep";
 import SizeStep from "./SizeStep";
-import IngredientStep from "./IngredientStep";
+import OrbitStep from "./OrbitStep";
 import ReviewStep from "./ReviewStep";
+import NutritionPanel from "./NutritionPanel";
+import BillPanel from "./BillPanel";
 import WaitingPhase from "./WaitingPhase";
 import ServedPhase from "./ServedPhase";
 
@@ -39,6 +42,8 @@ const BUILD_STEPS: BuildStep[] = [
   "TOPPINGS",
   "REVIEW",
 ];
+
+const SIZE_ORDER: PizzaSize[] = ["SMALL", "MEDIUM", "LARGE"];
 
 interface Props {
   tableId: string;
@@ -75,7 +80,7 @@ export default function PizzaBuilder({ tableId }: Props) {
       .catch(() => setMenuError("Failed to load menu."));
   }, []);
 
-  // Fetch combo (silent)
+  // Fetch combo
   useEffect(() => {
     fetch("/api/menu/famous-combo")
       .then((r) => r.json())
@@ -89,7 +94,6 @@ export default function PizzaBuilder({ tableId }: Props) {
   useEffect(() => {
     if (!orderId) return;
     const socket = getSocket();
-
     const joinRoom = () => socket.emit("join-table", tableNum);
     const handler = ({
       orderId: incoming,
@@ -100,11 +104,9 @@ export default function PizzaBuilder({ tableId }: Props) {
     }) => {
       if (incoming === orderId) setOrderStatus(status);
     };
-
     joinRoom();
     socket.on("connect", joinRoom);
     socket.on("order-status-update", handler);
-
     return () => {
       socket.off("connect", joinRoom);
       socket.off("order-status-update", handler);
@@ -114,7 +116,7 @@ export default function PizzaBuilder({ tableId }: Props) {
 
   useEffect(() => () => disconnectSocket(), []);
 
-  // ── Derived values ─────────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
   const grouped = useMemo(() => {
     const out: Record<"BASE" | "SAUCE" | "CHEESE" | "TOPPING", MenuItem[]> = {
       BASE: [],
@@ -145,11 +147,11 @@ export default function PizzaBuilder({ tableId }: Props) {
     const s = new Set<BuildStep>();
     if (selectedBase) {
       s.add("DOUGH");
-      s.add("SIZE"); // size always has a default
+      s.add("SIZE");
     }
     if (selectedSauce) s.add("SAUCE");
     if (selectedCheese) s.add("CHEESE");
-    if (selectedSauce && selectedCheese) s.add("TOPPINGS"); // toppings optional
+    if (selectedSauce && selectedCheese) s.add("TOPPINGS");
     return s;
   }, [selectedBase, selectedSauce, selectedCheese]);
 
@@ -162,7 +164,7 @@ export default function PizzaBuilder({ tableId }: Props) {
     };
   }, [selected]);
 
-  // ── Selection actions ──────────────────────────────────────────────────────
+  // ── Selection actions ─────────────────────────────────────────────────────
   function applyIngredient(item: MenuItem) {
     if (orderId) return;
     setError(null);
@@ -171,13 +173,17 @@ export default function PizzaBuilder({ tableId }: Props) {
         const exists = prev.some((p) => p.id === item.id);
         return exists ? removeLayer(prev, item.id) : addLayer(prev, item);
       }
-      // BASE/SAUCE/CHEESE: re-tap same id clears it; otherwise replace
       const same = prev.find(
         (p) => p.layerType === item.layerType && p.id === item.id,
       );
       if (same) return removeLayer(prev, item.id);
       return addLayer(prev, item);
     });
+  }
+
+  function removeById(id: number) {
+    if (orderId) return;
+    setSelected((prev) => removeLayer(prev, id));
   }
 
   function applyCombo() {
@@ -195,7 +201,34 @@ export default function PizzaBuilder({ tableId }: Props) {
     setBuildStep("REVIEW");
   }
 
-  // ── Step navigation ────────────────────────────────────────────────────────
+  // Cycle dough via swipe (or arrow click)
+  function cycleDough(dir: -1 | 1) {
+    if (orderId || grouped.BASE.length === 0) return;
+    const current = selectedBase
+      ? grouped.BASE.findIndex((b) => b.id === selectedBase.id)
+      : -1;
+    const next =
+      current < 0
+        ? 0
+        : (current + (dir > 0 ? 1 : -1) + grouped.BASE.length) %
+          grouped.BASE.length;
+    const target = grouped.BASE[next];
+    if (!target) return;
+    setSelected((prev) => {
+      const without = prev.filter((p) => p.layerType !== "BASE");
+      return [target, ...without];
+    });
+  }
+
+  // Adjust size via pinch / scroll
+  function bumpSize(delta: -1 | 1) {
+    if (orderId) return;
+    const idx = SIZE_ORDER.indexOf(pizzaSize);
+    const next = Math.max(0, Math.min(SIZE_ORDER.length - 1, idx + delta));
+    if (next !== idx) setPizzaSize(SIZE_ORDER[next]);
+  }
+
+  // ── Step navigation ───────────────────────────────────────────────────────
   function canAdvance(from: BuildStep): boolean {
     switch (from) {
       case "DOUGH":
@@ -233,7 +266,7 @@ export default function PizzaBuilder({ tableId }: Props) {
     }
   }
 
-  // ── Order ──────────────────────────────────────────────────────────────────
+  // ── Order ─────────────────────────────────────────────────────────────────
   async function placeOrder() {
     if (!canPlace) return;
     setPlacing(true);
@@ -261,7 +294,7 @@ export default function PizzaBuilder({ tableId }: Props) {
     }
   }
 
-  // ── Phase rendering ────────────────────────────────────────────────────────
+  // ── Phase rendering ───────────────────────────────────────────────────────
   if (orderId && orderStatus === "SERVED") {
     return (
       <main className="min-h-screen bg-void text-cream flex items-center justify-center px-4 py-12">
@@ -282,84 +315,110 @@ export default function PizzaBuilder({ tableId }: Props) {
     );
   }
 
-  // ── BUILD phase render helpers ─────────────────────────────────────────────
+  // ── BUILD render helpers ──────────────────────────────────────────────────
   const isReview = buildStep === "REVIEW";
   const stepIdx = BUILD_STEPS.indexOf(buildStep);
 
-  function renderStepControls() {
+  // Decide what occupies the canvas area for the current step
+  function renderCanvasArea() {
+    const orbitItems =
+      buildStep === "SAUCE"
+        ? grouped.SAUCE
+        : buildStep === "CHEESE"
+          ? grouped.CHEESE
+          : buildStep === "TOPPINGS"
+            ? grouped.TOPPING
+            : null;
+
+    const orbitSelectedIds =
+      buildStep === "SAUCE"
+        ? selectedIdsByLayer.SAUCE
+        : buildStep === "CHEESE"
+          ? selectedIdsByLayer.CHEESE
+          : buildStep === "TOPPINGS"
+            ? selectedIdsByLayer.TOPPING
+            : new Set<number>();
+
+    const swipeProps =
+      buildStep === "DOUGH"
+        ? {
+            onSwipe: cycleDough,
+            swipeHint: { left: "Previous dough", right: "Next dough" },
+          }
+        : {};
+
+    const pinchProps = buildStep === "SIZE" ? { onPinch: bumpSize } : {};
+
+    const canvas = (
+      <PizzaCanvas
+        ref={canvasRef}
+        layers={selected}
+        size={pizzaSize}
+        glow={isReview}
+        {...swipeProps}
+        {...pinchProps}
+      />
+    );
+
+    if (orbitItems && orbitItems.length > 0) {
+      return (
+        <RotatingOrbit
+          items={orbitItems}
+          selectedIds={orbitSelectedIds}
+          onApply={applyIngredient}
+          dropTargetRef={canvasRef}
+        >
+          {canvas}
+        </RotatingOrbit>
+      );
+    }
+
+    return canvas;
+  }
+
+  function renderStepBlurb() {
     switch (buildStep) {
       case "DOUGH":
         return (
           <DoughStep
             bases={grouped.BASE}
             selectedId={selectedBase?.id ?? null}
-            onSelect={applyIngredient}
           />
         );
       case "SIZE":
         return <SizeStep size={pizzaSize} onChange={setPizzaSize} />;
       case "SAUCE":
         return (
-          <IngredientStep
-            layerType="SAUCE"
-            items={grouped.SAUCE}
-            selectedIds={selectedIdsByLayer.SAUCE}
-            onApply={applyIngredient}
-            dropTargetRef={canvasRef}
-            stepLabel="Step 3 — Add a sauce"
-            helper="Tap a sauce or drag it onto the pizza."
-            variant="pill"
+          <OrbitStep
+            stepLabel="Step 3 — Pour the sauce"
+            helper="Drag a sauce from the orbit onto the pizza, or tap it to add."
           />
         );
       case "CHEESE":
         return (
-          <IngredientStep
-            layerType="CHEESE"
-            items={grouped.CHEESE}
-            selectedIds={selectedIdsByLayer.CHEESE}
-            onApply={applyIngredient}
-            dropTargetRef={canvasRef}
-            stepLabel="Step 4 — Add cheese"
-            helper="Pick a cheese — drag or tap."
-            variant="pill"
+          <OrbitStep
+            stepLabel="Step 4 — Top with cheese"
+            helper="Grab a cheese and slide it onto your pizza, or tap to add."
           />
         );
       case "TOPPINGS":
         return (
-          <IngredientStep
-            layerType="TOPPING"
-            items={grouped.TOPPING}
-            selectedIds={selectedIdsByLayer.TOPPING}
-            onApply={applyIngredient}
-            dropTargetRef={canvasRef}
-            stepLabel="Step 5 — Add toppings"
-            helper="Stack as many as you like — tap again to remove."
-            variant="tile"
-            selectedToppingsCount={selectedToppings.length}
+          <OrbitStep
+            stepLabel="Step 5 — Stack the toppings"
+            helper="Drag as many toppings as you like onto the pizza. Tap an existing topping to remove it."
+            selectedCount={selectedToppings.length}
+            selectedNoun="topping"
           />
         );
       case "REVIEW":
-        return (
-          <ReviewStep
-            base={selectedBase}
-            sauce={selectedSauce}
-            cheese={selectedCheese}
-            toppings={selectedToppings}
-            size={pizzaSize}
-            totals={totals}
-            onEdit={(s) => setBuildStep(s)}
-            onPlaceOrder={placeOrder}
-            canPlace={canPlace}
-            placing={placing}
-            error={error}
-          />
-        );
+        return null;
     }
   }
 
+  // ── Layout ────────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-void text-cream px-4 py-6 md:py-10">
-      <div className="max-w-5xl mx-auto flex flex-col gap-5">
+    <main className="min-h-screen bg-void text-cream px-4 py-5 md:py-8">
+      <div className="max-w-7xl mx-auto flex flex-col gap-5">
         {/* Header */}
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -370,20 +429,6 @@ export default function PizzaBuilder({ tableId }: Props) {
               Build your pizza
             </h1>
           </div>
-
-          {/* Compact totals strip */}
-          <div className="flex items-center gap-3 text-xs font-mono">
-            <span className="text-smoke">
-              Total{" "}
-              <span className="text-ember font-bold ml-1">
-                ${totals.price.toFixed(2)}
-              </span>
-            </span>
-            <span className="text-smoke">
-              <span className="text-cream font-bold">{totals.calories}</span>{" "}
-              kcal
-            </span>
-          </div>
         </header>
 
         {menuError && (
@@ -392,7 +437,7 @@ export default function PizzaBuilder({ tableId }: Props) {
           </div>
         )}
 
-        {/* Famous combo mini-banner */}
+        {/* Combo mini-banner */}
         {combo && !comboDismissed && !isReview && (
           <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-glass border border-ember/40">
             <div className="flex items-center gap-2 min-w-0">
@@ -424,41 +469,46 @@ export default function PizzaBuilder({ tableId }: Props) {
           </div>
         )}
 
-        {/* Stepper */}
         <BuildStepper
           current={buildStep}
           completed={completedSteps}
           onJump={jumpTo}
         />
 
-        {/* Canvas + step controls */}
         {isReview ? (
           <div className="flex flex-col items-center gap-6">
-            <PizzaCanvas
-              ref={canvasRef}
-              layers={selected}
+            {renderCanvasArea()}
+            <ReviewStep
+              base={selectedBase}
+              sauce={selectedSauce}
+              cheese={selectedCheese}
+              toppings={selectedToppings}
               size={pizzaSize}
-              glow
+              totals={totals}
+              onEdit={(s) => setBuildStep(s)}
+              onPlaceOrder={placeOrder}
+              canPlace={canPlace}
+              placing={placing}
+              error={error}
             />
-            {renderStepControls()}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 items-center">
-            {/* Pizza canvas */}
-            <div className="flex justify-center">
-              <PizzaCanvas
-                ref={canvasRef}
-                layers={selected}
-                size={pizzaSize}
-              />
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_240px] gap-6 items-start">
+            {/* Left: Nutrition */}
+            <aside className="lg:sticky lg:top-4 order-2 lg:order-1">
+              <NutritionPanel totals={totals} />
+            </aside>
 
-            {/* Step controls */}
-            <div className="bg-glass border border-ash rounded-3xl p-5 sm:p-6 flex flex-col gap-5">
-              {renderStepControls()}
+            {/* Center: Canvas + step copy + nav */}
+            <section className="order-1 lg:order-2 flex flex-col items-center gap-5">
+              <div className="w-full flex justify-center">
+                {renderCanvasArea()}
+              </div>
+
+              <div className="w-full max-w-xl">{renderStepBlurb()}</div>
 
               {/* Footer nav */}
-              <div className="flex items-center justify-between gap-3 pt-2 border-t border-ash/60">
+              <div className="flex items-center justify-between gap-3 w-full max-w-md pt-2">
                 <button
                   onClick={goBack}
                   disabled={stepIdx <= 0}
@@ -481,7 +531,17 @@ export default function PizzaBuilder({ tableId }: Props) {
                     : "Next →"}
                 </button>
               </div>
-            </div>
+            </section>
+
+            {/* Right: Bill */}
+            <aside className="lg:sticky lg:top-4 order-3">
+              <BillPanel
+                items={selected}
+                totals={totals}
+                onRemove={removeById}
+                locked={!!orderId}
+              />
+            </aside>
           </div>
         )}
       </div>

@@ -1,6 +1,12 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import gsap from "gsap";
 import Image from "next/image";
 import { assignZIndexes } from "@/lib/layer-rules";
@@ -18,14 +24,24 @@ interface Props {
   layers: MenuItem[];
   size?: PizzaSize;
   glow?: boolean;
+  /** Enables horizontal swipe on the canvas. -1 = swipe left (next), 1 = swipe right (prev) */
+  onSwipe?: (dir: -1 | 1) => void;
+  /** Enables pinch + wheel resize. -1 = shrink, 1 = grow */
+  onPinch?: (delta: -1 | 1) => void;
+  /** Show overlay arrow indicators when swipe is enabled */
+  swipeHint?: { left: string; right: string };
 }
 
 export interface PizzaCanvasHandle {
   getBoundingClientRect: () => DOMRect | undefined;
 }
 
+const SWIPE_THRESHOLD = 60; // px horizontal travel to register a swipe
+const WHEEL_THRESHOLD = 80; // accumulated deltaY to trigger size jump
+const PINCH_THRESHOLD = 1.25; // ratio of pinch distance to trigger size jump
+
 const PizzaCanvas = forwardRef<PizzaCanvasHandle, Props>(function PizzaCanvas(
-  { layers, size = "MEDIUM", glow = false },
+  { layers, size = "MEDIUM", glow = false, onSwipe, onPinch, swipeHint },
   forwardedRef,
 ) {
   const dishRef = useRef<HTMLDivElement>(null);
@@ -71,7 +87,6 @@ const PizzaCanvas = forwardRef<PizzaCanvasHandle, Props>(function PizzaCanvas(
       knownIds.current.add(item.id);
     });
 
-    // Drop tracking IDs that are no longer present (handles layer removal/reset)
     knownIds.current.forEach((id) => {
       if (!presentIds.has(id)) knownIds.current.delete(id);
     });
@@ -98,6 +113,121 @@ const PizzaCanvas = forwardRef<PizzaCanvasHandle, Props>(function PizzaCanvas(
     };
   }, [glow]);
 
+  // ── Swipe (single-pointer horizontal drag) ────────────────────────────────
+  useEffect(() => {
+    if (!onSwipe || !dishRef.current) return;
+    const el = dishRef.current;
+
+    let startX: number | null = null;
+    let pointerId: number | null = null;
+
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      startX = e.clientX;
+      pointerId = e.pointerId;
+    };
+    const onUp = (e: PointerEvent) => {
+      if (startX === null || pointerId !== e.pointerId) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+        onSwipe(dx > 0 ? 1 : -1);
+        // Slide animation hint
+        gsap.fromTo(
+          el,
+          { x: dx > 0 ? -20 : 20 },
+          { x: 0, duration: 0.4, ease: "back.out(1.6)" },
+        );
+      }
+      startX = null;
+      pointerId = null;
+    };
+    const onCancel = () => {
+      startX = null;
+      pointerId = null;
+    };
+
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onCancel);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onCancel);
+    };
+  }, [onSwipe]);
+
+  // ── Pinch (two-pointer) + Wheel resize ────────────────────────────────────
+  useEffect(() => {
+    if (!onPinch || !dishRef.current) return;
+    const el = dishRef.current;
+
+    const pointers = new Map<number, { x: number; y: number }>();
+    let initialDist: number | null = null;
+    let wheelAccum = 0;
+    let wheelTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const distance = () => {
+      const arr = Array.from(pointers.values());
+      if (arr.length < 2) return 0;
+      const dx = arr[0].x - arr[1].x;
+      const dy = arr[0].y - arr[1].y;
+      return Math.hypot(dx, dy);
+    };
+
+    const onDown = (e: PointerEvent) => {
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) initialDist = distance();
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2 && initialDist) {
+        const cur = distance();
+        const ratio = cur / initialDist;
+        if (ratio >= PINCH_THRESHOLD) {
+          onPinch(1);
+          initialDist = cur;
+        } else if (ratio <= 1 / PINCH_THRESHOLD) {
+          onPinch(-1);
+          initialDist = cur;
+        }
+      }
+    };
+    const onUp = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) initialDist = null;
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      if (!onPinch) return;
+      e.preventDefault();
+      wheelAccum += e.deltaY;
+      if (wheelTimer) clearTimeout(wheelTimer);
+      if (Math.abs(wheelAccum) >= WHEEL_THRESHOLD) {
+        onPinch(wheelAccum < 0 ? 1 : -1); // scroll up = grow
+        wheelAccum = 0;
+      } else {
+        wheelTimer = setTimeout(() => {
+          wheelAccum = 0;
+        }, 200);
+      }
+    };
+
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+      el.removeEventListener("wheel", onWheel);
+      if (wheelTimer) clearTimeout(wheelTimer);
+    };
+  }, [onPinch]);
+
   return (
     <div
       className="relative flex items-center justify-center"
@@ -110,7 +240,8 @@ const PizzaCanvas = forwardRef<PizzaCanvasHandle, Props>(function PizzaCanvas(
     >
       <div
         ref={dishRef}
-        className="relative w-full h-full rounded-full bg-void/70 border-4 border-ash/60 shadow-[0_30px_80px_-20px_rgba(255,107,53,0.25)] flex items-center justify-center overflow-hidden transition-transform duration-500"
+        className={`relative w-full h-full rounded-full bg-void/70 border-4 border-ash/60 shadow-[0_30px_80px_-20px_rgba(255,107,53,0.25)] flex items-center justify-center overflow-hidden transition-transform duration-500
+          ${onSwipe || onPinch ? "touch-none cursor-grab active:cursor-grabbing" : ""}`}
         style={{ transform: `scale(${scale})` }}
         aria-label="Pizza preview"
         role="img"
@@ -131,7 +262,7 @@ const PizzaCanvas = forwardRef<PizzaCanvasHandle, Props>(function PizzaCanvas(
           </div>
         )}
 
-        {/* Stacked layers — each layer keeps its inline opacity managed by GSAP */}
+        {/* Stacked layers — opacity managed exclusively by GSAP */}
         {stacked.map((item) => (
           <div
             key={item.id}
@@ -152,6 +283,31 @@ const PizzaCanvas = forwardRef<PizzaCanvasHandle, Props>(function PizzaCanvas(
             />
           </div>
         ))}
+
+        {/* Swipe hint overlay arrows */}
+        {onSwipe && swipeHint && (
+          <>
+            <button
+              type="button"
+              onClick={() => onSwipe(1)}
+              aria-label={swipeHint.left}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full bg-void/80 border border-ash text-cream/80 hover:text-ember hover:border-ember transition-colors flex items-center justify-center text-lg font-bold backdrop-blur"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => onSwipe(-1)}
+              aria-label={swipeHint.right}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full bg-void/80 border border-ash text-cream/80 hover:text-ember hover:border-ember transition-colors flex items-center justify-center text-lg font-bold backdrop-blur"
+            >
+              ›
+            </button>
+            <p className="absolute bottom-3 left-1/2 -translate-x-1/2 z-50 text-[9px] font-mono uppercase tracking-[0.25em] text-smoke pointer-events-none">
+              Swipe to switch
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
