@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { addLayer, hasBase, removeLayer } from "@/lib/layer-rules";
 import { computeTotals } from "@/lib/nutrition";
 import { getSocket, disconnectSocket } from "@/lib/socket-client";
+import { trackEvent } from "@/lib/posthog";
 import type {
   ApiResponse,
   MenuItem,
@@ -102,7 +103,10 @@ export default function PizzaBuilder({ tableId }: Props) {
       orderId: number;
       status: OrderStatus;
     }) => {
-      if (incoming === orderId) setOrderStatus(status);
+      if (incoming === orderId) {
+        setOrderStatus(status);
+        trackEvent("order_status_received", { order_id: incoming, status, table_id: tableNum });
+      }
     };
     joinRoom();
     socket.on("connect", joinRoom);
@@ -284,6 +288,14 @@ export default function PizzaBuilder({ tableId }: Props) {
       if (data.success) {
         setOrderId(data.data.id);
         setOrderStatus("NEW");
+        trackEvent("order_placed", {
+          table_id: tableNum,
+          order_id: data.data.id,
+          size: pizzaSize,
+          layer_count: selected.length,
+          total_price: data.data.totalPrice,
+          total_cals: data.data.totalCals,
+        });
       } else {
         setError(data.errors?.join(" • ") ?? data.message);
       }

@@ -12,7 +12,8 @@
       "Bash(npm run *)",
       "Bash(npm install *)",
       "Bash(node -e \"require\\('@dnd-kit/core'\\); console.log\\('ok'\\)\")",
-      "mcp__Claude_in_Chrome__tabs_context_mcp"
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }
