@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ok } from "@/lib/api-response";
+import { ok, fail } from "@/lib/api-response";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +29,14 @@ export const dynamic = "force-dynamic";
  *                     $ref: '#/components/schemas/MenuItem'
  */
 export async function GET() {
-  const items = await prisma.menuItem.findMany({
-    where: { isAvailable: true },
-    orderBy: [{ layerType: "asc" }, { sortOrder: "asc" }],
-  });
-  return ok(items);
+  try {
+    const items = await prisma.menuItem.findMany({
+      where: { isAvailable: true },
+      orderBy: [{ layerType: "asc" }, { sortOrder: "asc" }],
+    });
+    return ok(items);
+  } catch (err) {
+    console.error("[/api/menu] error:", err);
+    return fail("Failed to load menu", [], 500);
+  }
 }

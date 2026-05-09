@@ -1,4 +1,4 @@
-import { ok } from "@/lib/api-response";
+import { ok, fail } from "@/lib/api-response";
 import { computeTopCombo } from "@/lib/combo";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +30,11 @@ export const dynamic = "force-dynamic";
  *                     - type: 'null'
  */
 export async function GET() {
-  const combo = await computeTopCombo();
-  return ok(combo);
+  try {
+    const combo = await computeTopCombo();
+    return ok(combo);
+  } catch (err) {
+    console.error("[/api/menu/famous-combo] error:", err);
+    return fail("Failed to compute combo", [], 500);
+  }
 }

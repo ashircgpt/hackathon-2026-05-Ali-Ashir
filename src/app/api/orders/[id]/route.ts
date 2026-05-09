@@ -51,11 +51,15 @@ export async function GET(
   const id = Number(params.id);
   if (!Number.isInteger(id) || id < 1) return fail("Invalid order ID", [], 400);
 
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: ORDER_INCLUDE,
-  });
-
-  if (!order) return fail("Order not found", [], 404);
-  return ok(order);
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: ORDER_INCLUDE,
+    });
+    if (!order) return fail("Order not found", [], 404);
+    return ok(order);
+  } catch (err) {
+    console.error("[/api/orders/[id]] error:", err);
+    return fail("Failed to load order", [], 500);
+  }
 }
