@@ -119,6 +119,25 @@ Architecture Decision Records (ADRs) for key choices made during the hackathon.
 
 ---
 
+## ADR-009: Railway over Vercel for Production Deployment
+
+**Status:** Accepted
+
+**Context:** Socket.io (ADR-008) requires attaching to a persistent Node.js `http.Server`. Vercel serverless functions are stateless and terminate after each request — there is no shared server instance to attach Socket.io to. The workaround (`instrumentation.ts` + custom server) was not reliable on Vercel's infrastructure.
+
+**Decision:** Deploy to Railway free tier. Railway provides a long-running container process that runs `node server.ts`, which attaches Socket.io to the underlying Node.js HTTP server before Next.js begins serving requests.
+
+**Consequences:**
+- (+) Socket.io works correctly — no serverless teardown
+- (+) Custom `server.ts` pattern is straightforward and well-supported
+- (+) Railway free tier is $0 and requires no credit card
+- (+) Same env var setup as Vercel (set in Railway dashboard)
+- (-) Slightly longer cold start compared to Vercel Edge
+- (-) Less global CDN distribution than Vercel's edge network
+- **Related fix:** Supabase free-tier session pool (`pool_size: 15`) was exhausted by Next.js hot-reload + Railway long-lived process. Fixed by appending `connection_limit=1` to `DATABASE_URL` in `src/lib/prisma.ts` via `buildClient()`.
+
+---
+
 ## ADR-008: Socket.io Replacing SSE for Real-time
 
 **Status:** Accepted (supersedes ADR-002)

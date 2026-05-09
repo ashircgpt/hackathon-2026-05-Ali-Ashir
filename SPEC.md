@@ -41,12 +41,12 @@ Auth is a demo passphrase gate only — not suitable for production. See Post-Ha
 ## Kitchen Flow
 
 1. Navigate to `/kitchen` — authenticate with kitchen passphrase
-2. See a **Kanban board — today's orders only** in four columns: NEW | PREPARING | BAKING | READY
+2. See a **Kanban board — today's orders only** in five columns: NEW | PREPARING | BAKING | READY | SERVED
 3. New orders appear live on the board via Socket.io (no refresh needed)
 4. Click the "Advance →" button on a card to move it to the next column (PATCH `/api/orders/[id]/status`)
 5. Status advancement emits a Socket.io event → customer table receives a toast notification + status bar update
 6. GSAP animates card transitions between columns
-7. SERVED orders are removed from the board (handled separately in order history)
+7. SERVED orders appear in a read-only **SERVED column** on the right — cards are non-draggable with no Advance button
 
 ---
 
@@ -204,7 +204,7 @@ The following are explicitly excluded from this build:
 ## Seed Data
 
 All data is synthetic. The seed script creates:
-- 16 menu items (3 BASE, 4 SAUCE, 3 CHEESE, 6 TOPPING) with full nutrition data
+- 15 menu items (3 BASE, 3 SAUCE, 2 CHEESE, 7 TOPPING) with full nutrition data
 - 8 historical orders across various statuses
 - 2 feedback blocks seeding the chain
 - "Most Famous Combo" winner embedded in seeded orders: Classic Dough + Marinara + Mozzarella + Pepperoni + Mushrooms (3 occurrences)

@@ -98,6 +98,7 @@ POST /api/orders (new order created)
 **Socket.io rooms:**
 - `kitchen` — all kitchen staff clients
 - `table-${tableId}` — the customer at a specific table
+- `admin` — admin dashboard clients (receives `order-new` and `order-advance` for real-time stats refresh)
 
 **Socket.io server initialization:**
 - Attached to the underlying Node.js `http.Server` (via custom server or `instrumentation.ts`)
@@ -138,15 +139,18 @@ Admin UI re-computes hashes client-side using Web Crypto API to verify chain int
 
 ## Deployment
 
+**Platform:** Railway (free tier) — required for Socket.io persistent Node.js server.
+
 ```
-git push → Vercel CI
-  prisma generate
-  prisma migrate deploy
-  npm run db:seed
+git push → Railway CI
+  npm install
   next build
-  → deploy to Vercel Edge Network
+  node server.ts (custom server attaches Socket.io to http.Server)
+  → deploy to Railway container
 ```
 
-All env secrets in Vercel dashboard only — never in source.
+All env secrets set in Railway dashboard only — never in source.
 
-**Note:** Socket.io requires a persistent Node.js server process. On Vercel serverless, use the custom server approach or Vercel's WebSocket support. If serverless constraints make Socket.io impractical, fall back to documented polling strategy.
+**Why Railway over Vercel:** Socket.io requires a persistent Node.js server process. Vercel serverless functions terminate after each request, making Socket.io impossible without additional infrastructure. Railway provides a long-running container with a stable port, solving this natively.
+
+**Database:** Supabase free-tier PostgreSQL. `connection_limit=1` appended to DATABASE_URL in `src/lib/prisma.ts` to avoid exhausting the 15-connection Supabase session pool.

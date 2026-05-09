@@ -206,6 +206,76 @@ Format:
 
 ---
 
+### [2026-05-09] — Table UI full rebuild: guided 6-step pizza build flow
+
+**Prompt:** Replace TestOrderForm with the full production pizza builder UI. 6-step guided flow (SELECT_BASE → ADD_SAUCE → ADD_CHEESE → ADD_TOPPINGS → REVIEW → WAITING). PizzaCanvas component with GSAP layer pop-in, step-aware orbit ring, canvas layer stacking z-index bug fix.
+
+**Files affected:** `src/components/pizza-builder/PizzaBuilder.tsx` (new — 6-step state machine), `src/components/pizza-builder/PizzaCanvas.tsx` (new — GSAP layer animations, forwardRef handle), `src/components/pizza-builder/IngredientOrbit.tsx` (new — rotating orbit ring, step-filtered items), `src/app/table/[tableId]/page.tsx` (updated to use PizzaBuilder)
+
+**Notes:** Commit 0a332e3. Canvas layer stacking bug fixed — zIndex values applied correctly via inline style. Model: Sonnet.
+
+---
+
+### [2026-05-09] — Canvas gestures + rotating orbits + side panels + star ratings
+
+**Prompt:** Enhance the table UI with swipe/pinch/wheel resize on canvas, continuously rotating orbit ring, persistent left nutrition panel + right bill panel, star rating feedback form, and order status tracking bar.
+
+**Files affected:** `src/components/pizza-builder/PizzaCanvas.tsx` (swipe/pinch/wheel gesture handlers, PointerEvent listeners), `src/components/pizza-builder/IngredientOrbit.tsx` (continuous GSAP rotation, pause on hover), `src/components/pizza-builder/NutritionPanel.tsx` (new — live macro totals), `src/components/pizza-builder/BillPanel.tsx` (new — per-item price breakdown + Place Order), `src/components/pizza-builder/CombosBanner.tsx` (new — auto-populate most famous combo), `src/components/order/FeedbackForm.tsx` (star rating 1–5 + text comment), `src/components/waiting/WaitingGames.tsx` + `TicTacToe.tsx` + `PizzaTrivia.tsx`
+
+**Notes:** Commit 3877ec5. All gesture handlers cleaned up on unmount. Star rating uses controlled state. Model: Sonnet.
+
+---
+
+### [2026-05-09] — Admin page 500 error fix + Supabase connection pool limit
+
+**Prompt:** Admin page was crashing with `SyntaxError: Failed to execute 'json' on 'Response': Unexpected end of JSON input`. Root cause: `EMAXCONNSESSION: max clients reached, pool_size: 15` from Supabase free-tier exhaustion. Fix: add `connection_limit=1` to DATABASE_URL in prisma client, add try/catch to admin routes, add `r.ok` check in OverviewSection before calling `.json()`.
+
+**Files affected:** `src/lib/prisma.ts` (buildClient() appends `connection_limit=1` to DATABASE_URL), `src/app/api/admin/stats/route.ts` (try/catch + fail()), `src/app/api/admin/feedback/route.ts` (try/catch + fail()), `src/components/admin/OverviewSection.tsx` (fetchError state, r.ok guard, error banner)
+
+**Notes:** Commit 5656545 (partial). `connection_limit=1` requires full server restart — not hot-reload — because Prisma singleton is cached in `global`. Model: Sonnet.
+
+---
+
+### [2026-05-09] — Pizza layer image sizing and alignment fix
+
+**Prompt:** Audit pizza canvas layer sizing. Topping images appeared huge (filling full canvas). Sauce covered the crust ring. Fix: per-layer CSS config — sauce inset 5%, cheese inset 6%, toppings inset 12% + imageScale 0.75. Toppings now render at ~53% of canvas diameter.
+
+**Files affected:** `src/components/pizza-builder/PizzaCanvas.tsx` (LAYER_CONFIG constant with containerInset + imageScale per LayerType, inline style on layer div instead of className="absolute inset-0")
+
+**Notes:** Commit 5656545 (partial). Tested 4 configurations via browser eval before choosing inset 12% + scale 0.75 for toppings. Model: Sonnet.
+
+---
+
+### [2026-05-09] — Full app audit: try/catch on all remaining unguarded API routes
+
+**Prompt:** Full API audit. Add try/catch error boundaries to all remaining routes that lacked them: /api/menu, /api/menu/famous-combo, /api/orders/[id]. Ensures all routes return proper JSON on error rather than crashing with an empty 500 body.
+
+**Files affected:** `src/app/api/menu/route.ts`, `src/app/api/menu/famous-combo/route.ts`, `src/app/api/orders/[id]/route.ts`
+
+**Notes:** Commit 6b9b6b4. All routes now return `fail("...", [], 500)` on Prisma errors. Model: Sonnet.
+
+---
+
+### [2026-05-09] — Install sharp for Next.js production image optimization
+
+**Prompt:** Railway deploy logs showed: `⚠ For production Image Optimization with Next.js, the optional 'sharp' package is strongly recommended.` Fix by installing sharp.
+
+**Files affected:** `package.json`, `package-lock.json`
+
+**Notes:** Commit 73363f0. `"sharp": "^0.34.5"` added. Railway redeployed successfully. Model: Sonnet.
+
+---
+
+### [2026-05-09] — Docs sync + Notion PRD update
+
+**Prompt:** Update all project docs for sync with finalized project state. Fix SPEC.md seed data count, kitchen SERVED column, deployment platform. Update ARCHITECTURE_OVERVIEW.md with Railway + admin Socket.io room. Add ADR-009 to TECHNICAL_DECISIONS.md. Update COST_LOG.md with Railway. Sync Notion PRD with all changes. Add UI screenshots to Notion.
+
+**Files affected:** SPEC.md, ARCHITECTURE_OVERVIEW.md, TECHNICAL_DECISIONS.md, COST_LOG.md, PROMPT_LOG.md, Notion PRD
+
+**Notes:** All docs brought in sync with production state (Railway deployment, 15 menu items, SERVED column in kitchen, connection_limit fix). Model: Sonnet.
+
+---
+
 ### [2026-05-08] — Socket.io audit: hot-reload singleton fix + customer table room rejoin + admin real-time
 
 **Prompt:** "test the socket.io functionality through preview. make it perfectly working on each module and audit it as well." / "I have placed an order from table form — on runtime it gets listed in kitchen kanban but when I switch the state from kitchen module my table didn't update the live status. Also my admin module didn't update the order number or etc on runtime. Maybe socket.io is not working — audit and fix this."

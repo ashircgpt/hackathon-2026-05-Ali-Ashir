@@ -10,7 +10,7 @@ Hackathon rule: No paid APIs. All services must be on free tiers.
 
 | Service | Plan | Cost | Notes |
 |---|---|---|---|
-| Vercel | Free (Hobby) | $0 | Deployment + preview URLs |
+| Railway | Free tier | $0 | Production deployment (custom server for Socket.io) |
 | Supabase | Free tier | $0 | PostgreSQL database, 500 MB storage |
 | GitHub | Free | $0 | Source control |
 
@@ -28,4 +28,4 @@ _No cost incidents yet._
 
 ---
 
-> Last updated: 2026-05-08
+> Last updated: 2026-05-09
