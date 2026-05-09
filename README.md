@@ -29,9 +29,10 @@ npm run dev
 | URL | Who | Notes |
 |---|---|---|
 | `/table/1` | Customer | Pizza builder (default table) |
-| `/kitchen` | Staff | Order board — requires kitchen passphrase |
+| `/kitchen` | Staff | Kanban order board — requires kitchen passphrase |
 | `/admin` | Admin | Dashboard — requires admin passphrase |
 | `/login` | All | Passphrase login for kitchen/admin |
+| `/api-doc` | Dev | Swagger/OpenAPI interactive docs |
 | `/api/health` | Anyone | Health check endpoint |
 
 ## Environment Variables
@@ -51,7 +52,7 @@ AUTH_SECRET=replace_with_32_byte_hex_from_openssl_rand_hex_32
 KITCHEN_PASSPHRASE=kitchen_demo
 ADMIN_PASSPHRASE=admin_demo
 
-# Deployment URL (used for SSE absolute URLs)
+# Deployment URL (used for Socket.io and absolute URLs)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
@@ -64,7 +65,7 @@ Uses **Supabase free tier (PostgreSQL)** with Prisma ORM.
 ```bash
 npm run db:generate   # (re)generate Prisma client after schema changes
 npm run db:migrate    # create/apply migrations (prisma migrate dev)
-npm run db:seed       # load 16 menu items, 8 demo orders, 2 feedback blocks
+npm run db:seed       # load 15 menu items, 8 demo orders, 2 feedback blocks
 npm run db:reset      # wipe and re-seed (local dev only — never in production)
 npm run db:studio     # Prisma Studio visual browser at :5555
 ```
@@ -78,31 +79,20 @@ If Supabase is unavailable, switch to local SQLite for development:
 3. Set `DATABASE_URL=file:./prisma/dev.db` in `.env`
 4. Run `npm run db:migrate` and `npm run db:seed`
 
-> **Warning:** SQLite data resets on every Vercel deploy. Acceptable for local dev or emergency demo only.
+> **Warning:** SQLite data resets on every deploy. Acceptable for local dev or emergency demo only. Production deployment uses Supabase on Railway.
 
-## Layer Assets
+## Pizza Layer Assets
 
-Placeholder PNGs are in `public/layers/` (64×64, colored circles on transparent background).
-These will be replaced with real 512×512 top-down transparent ingredient photographs before the final demo.
+Real food-photo JPEGs are in `public/assets/pizza/`:
 
-| File | Ingredient |
+| Directory | Contents |
 |---|---|
-| `classic-dough.png` | Classic Dough (BASE) |
-| `whole-wheat-crust.png` | Whole Wheat Crust (BASE) |
-| `cauliflower-crust.png` | Cauliflower Crust (BASE) |
-| `marinara.png` | Marinara (SAUCE) |
-| `pesto.png` | Pesto (SAUCE) |
-| `bbq-sauce.png` | BBQ Sauce (SAUCE) |
-| `garlic-cream.png` | Garlic Cream (SAUCE) |
-| `mozzarella.png` | Mozzarella (CHEESE) |
-| `vegan-cheese.png` | Vegan Cheese (CHEESE) |
-| `double-cheddar.png` | Double Cheddar (CHEESE) |
-| `pepperoni.png` | Pepperoni (TOPPING) |
-| `mushrooms.png` | Mushrooms (TOPPING) |
-| `bell-peppers.png` | Bell Peppers (TOPPING) |
-| `olives.png` | Olives (TOPPING) |
-| `jalapenos.png` | Jalapeños (TOPPING) |
-| `pineapple.png` | Pineapple (TOPPING) |
+| `bases/` | 3 base doughs (classic, whole-wheat, cauliflower) |
+| `sauces/` | 3 sauces (marinara/tomato, BBQ, spicy) |
+| `cheese/` | 2 cheeses (mozzarella, cheddar) |
+| `toppings/` | 7 toppings (pepperoni, mushrooms, capsicum, olives, jalapeños, onions, chicken chunks) |
+
+Images are rendered with per-layer CSS insets in `PizzaCanvas.tsx` so each layer stays within its correct pizza zone (sauce inside crust ring, toppings at realistic scale).
 
 ## Tech Stack
 
@@ -111,7 +101,9 @@ These will be replaced with real 512×512 top-down transparent ingredient photog
 - **Supabase** — PostgreSQL (free tier)
 - **shadcn/ui** + **Tailwind CSS** — UI components
 - **@dnd-kit/core** — drag-and-drop pizza builder
-- **Server-Sent Events** — live order status
+- **Socket.io** — real-time bidirectional push (order status, kitchen board)
+- **GSAP** — all canvas animations, orbit ring, ingredient fly-ins
+- **Recharts** — admin dashboard charts
 
 ## Docs
 

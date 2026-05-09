@@ -40,5 +40,6 @@ prisma/dev.db-journal
 *.tsbuildinfo
 next-env.d.ts
 
-# Claude Code local settings (never commit)
-.claude/
+# Claude Code local settings — ignore contents but allow skills/ to be committed
+.claude/*
+!.claude/skills/

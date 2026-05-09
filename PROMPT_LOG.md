@@ -2,6 +2,32 @@
 
 Log of all AI-assisted prompts used during the hackathon.
 
+---
+
+## Prompt Highlights
+
+### 5 Best Prompts (highest leverage / cleanest result)
+
+| # | Session | Why it worked |
+|---|---|---|
+| 1 | **Path-scoped CLAUDE.md files** (2026-05-07) | Writing rules before code eliminated cross-boundary mistakes for the entire project. Claude never imported Prisma into a client component or mixed SHA-256 implementations for 30+ commits afterward. |
+| 2 | **Complete backend API + Socket.io + Swagger in one session** (2026-05-08) | A single well-structured prompt delivered 15 routes, Socket.io server, Swagger docs, and middleware upgrade. Clean build on first pass. Describes what a tight spec + scoped CLAUDE.md enables. |
+| 3 | **Pizza canvas layer sizing fix** (2026-05-09) | Precise description of the visual problem ("onions look huge, sauce covers the crust") led to a targeted `LAYER_CONFIG` solution with CSS insets + image scale — no image processing, pure CSS. Found and validated in browser in one session. |
+| 4 | **Socket.io audit: hot-reload singleton + admin real-time** (2026-05-08) | Described exact observed behaviour ("placed order, kitchen updates, but table doesn't"). Claude diagnosed 3 root causes (global singleton, no reconnect join, admin had no socket) and fixed all three. Zero regressions. |
+| 5 | **Admin module: sections + charts + layout fix** (2026-05-08) | A single prompt produced 6 admin section components, Recharts charts, GSAP chain verifier animation, and fixed a wrong sidebar import — all clean, zero ESLint warnings. |
+
+### 3 Worst Prompts (required the most iteration / recovery work)
+
+| # | Session | What went wrong | Recovery |
+|---|---|---|---|
+| 1 | **Landing page scroll animations** (2026-05-08) | Used GSAP ScrollTrigger for scroll-entrance reveals. Cards were invisible on load — GSAP `opacity:0` initial state stuck when ScrollTrigger failed silently under React Strict Mode. Took 2 revision rounds. | Replaced all scroll reveals with native IntersectionObserver + CSS transitions. |
+| 2 | **Socket.io on Vercel** (multiple sessions) | Three sessions spent trying `instrumentation.ts` and custom server workarounds on Vercel serverless. The platform fundamentally cannot hold a persistent Socket.io instance. | Migrated to Railway — correct infrastructure choice from the start would have saved ~4 hours. |
+| 3 | **TestOrderForm replacement** (2026-05-08) | Deleted the full pizza builder UI to replace with a simple test form, then had to rebuild the full builder from scratch in the next session. Net result: duplicate work. | Rebuilt full PizzaBuilder with 6-step flow. Should have kept the builder and added a dev shortcut instead. |
+
+---
+
+## All Prompts (chronological)
+
 Format:
 ```
 ### [YYYY-MM-DD HH:MM] — Brief description
