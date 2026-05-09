@@ -5,10 +5,11 @@ import type { ApiResponse, Feedback } from "@/types";
 
 interface Props {
   orderId: number;
-  onStartNewOrder: () => void;
+  onSubmitted: () => void;
+  onSkip: () => void;
 }
 
-export default function FeedbackForm({ orderId, onStartNewOrder }: Props) {
+export default function FeedbackForm({ orderId, onSubmitted, onSkip }: Props) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export default function FeedbackForm({ orderId, onStartNewOrder }: Props) {
       const data: ApiResponse<Feedback> = await res.json();
       if (data.success) {
         setSubmitted(true);
+        setTimeout(onSubmitted, 2000);
       } else {
         setError(data.message ?? "Failed to submit — please try again.");
       }
@@ -38,27 +40,24 @@ export default function FeedbackForm({ orderId, onStartNewOrder }: Props) {
 
   if (submitted) {
     return (
-      <div className="mt-6 text-center">
+      <div className="text-center py-6">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/15 border border-green-500/30 text-green-400 text-sm font-mono mb-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
           Feedback recorded on-chain
         </div>
-        <p className="text-xs text-cream/50 mb-5">
+        <p className="text-xs text-cream/50">
           Your review is part of the Pizza3.14 ledger forever.
         </p>
-        <button
-          onClick={onStartNewOrder}
-          className="px-6 py-2 rounded-full border border-ember text-ember text-sm font-semibold hover:bg-ember hover:text-void transition-all"
-        >
-          Start New Order →
-        </button>
+        <p className="text-[10px] text-smoke font-mono mt-3">
+          Returning to home…
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="mt-6">
-      <p className="text-sm text-cream/70 mb-1">
+    <div className="w-full">
+      <p className="text-sm text-cream/80 mb-1 font-medium">
         Enjoyed your pizza?
       </p>
       <p className="text-xs text-smoke mb-4">
@@ -75,9 +74,12 @@ export default function FeedbackForm({ orderId, onStartNewOrder }: Props) {
         id="feedback-content"
         rows={3}
         value={content}
-        onChange={(e) => { setContent(e.target.value); setError(null); }}
+        onChange={(e) => {
+          setContent(e.target.value);
+          setError(null);
+        }}
         disabled={loading}
-        placeholder="Share your thoughts..."
+        placeholder="Share your thoughts…"
         className="w-full bg-void/60 border border-ash rounded-xl px-4 py-3 text-sm text-cream placeholder-smoke/50 resize-none focus:outline-none focus:border-ember/60 transition-colors disabled:opacity-50"
       />
 
@@ -91,13 +93,13 @@ export default function FeedbackForm({ orderId, onStartNewOrder }: Props) {
         <button
           onClick={submit}
           disabled={content.trim().length === 0 || loading}
-          className="flex-1 py-2.5 rounded-xl bg-ember text-void text-sm font-bold hover:bg-cheese transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-1 py-2.5 rounded-xl bg-ember text-void text-sm font-bold hover:bg-cheese transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-ember/50"
         >
           {loading ? "Submitting…" : "Submit Feedback"}
         </button>
         <button
-          onClick={onStartNewOrder}
-          className="px-4 py-2.5 rounded-xl border border-ash text-smoke text-sm hover:border-cream/40 hover:text-cream transition-colors"
+          onClick={onSkip}
+          className="px-4 py-2.5 rounded-xl border border-ash text-smoke text-sm hover:border-cream/40 hover:text-cream transition-colors focus:outline-none focus:ring-1 focus:ring-cream/30"
         >
           Skip →
         </button>
