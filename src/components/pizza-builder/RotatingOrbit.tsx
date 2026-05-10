@@ -50,6 +50,7 @@ export default function RotatingOrbit({
 }: Props) {
   const orbitRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const counterRefs = useRef<Map<number, HTMLSpanElement>>(new Map());
   const tweens = useRef<{ orbit?: gsap.core.Tween; counters: gsap.core.Tween[] }>({
     counters: [],
   });
@@ -88,8 +89,8 @@ export default function RotatingOrbit({
         transformOrigin: "50% 50%",
       });
       tweens.current.counters = items
-        .map((it) => itemRefs.current.get(it.id))
-        .filter((el): el is HTMLButtonElement => !!el)
+        .map((it) => counterRefs.current.get(it.id))
+        .filter((el): el is HTMLSpanElement => !!el)
         .map((el) =>
           gsap.to(el, {
             rotation: -360,
@@ -234,43 +235,58 @@ export default function RotatingOrbit({
               onClick={() => onClick(item)}
               aria-pressed={isSelected}
               aria-label={`${item.name}, $${item.price.toFixed(2)} — drag onto pizza or tap to add`}
-              className={`absolute pointer-events-auto outline-none focus-visible:ring-2 focus-visible:ring-ember rounded-full transition-shadow touch-none
+              className={`absolute pointer-events-auto outline-none focus-visible:ring-2 focus-visible:ring-ember flex flex-col items-center touch-none
                 ${isDragging ? "opacity-0" : "opacity-100"}
-                ${isSelected ? "shadow-[0_0_28px_rgba(255,107,53,0.55)]" : ""}`}
+                ${drag && !isDragging ? "pointer-events-none" : ""}`}
               style={{
                 width: tileSize,
-                height: tileSize,
                 left: "50%",
                 top: "50%",
                 transform: `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`,
               }}
             >
+              {/* Counter-rotate layer: GSAP owns this element's transform.
+                  The parent button keeps its React inline translate untouched. */}
               <span
-                className={`relative w-full h-full rounded-full border-2 flex items-center justify-center transition-colors
-                  ${isSelected
-                    ? "border-ember bg-ember/15"
-                    : "border-ash bg-void/85 hover:border-ember/70"}`}
+                ref={(el) => {
+                  if (el) counterRefs.current.set(item.id, el);
+                  else counterRefs.current.delete(item.id);
+                }}
+                className="flex flex-col items-center"
+                style={{ width: tileSize }}
               >
-                <Image
-                  src={item.imageUrl}
-                  alt=""
-                  fill
-                  sizes={`${tileSize}px`}
-                  className="object-contain p-2 pointer-events-none select-none"
-                />
                 <span
-                  className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold border whitespace-nowrap
+                  className={`relative rounded-full border-2 flex items-center justify-center transition-colors shrink-0
                     ${isSelected
-                      ? "bg-ember text-void border-ember"
-                      : "bg-void/95 text-ember border-ash"}`}
+                      ? "border-ember bg-ember/15 shadow-[0_0_28px_rgba(255,107,53,0.55)]"
+                      : "border-ash bg-void/85 hover:border-ember/70"}`}
+                  style={{ width: tileSize, height: tileSize }}
                 >
-                  ${item.price.toFixed(2)}
-                </span>
-                {isSelected && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-ember text-void text-[10px] font-bold flex items-center justify-center shadow">
-                    ✓
+                  <Image
+                    src={item.imageUrl}
+                    alt=""
+                    fill
+                    sizes={`${tileSize}px`}
+                    className="object-contain p-2 pointer-events-none select-none"
+                  />
+                  <span
+                    className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold border whitespace-nowrap
+                      ${isSelected
+                        ? "bg-ember text-void border-ember"
+                        : "bg-void/95 text-ember border-ash"}`}
+                  >
+                    ${item.price.toFixed(2)}
                   </span>
-                )}
+                  {isSelected && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-ember text-void text-[10px] font-bold flex items-center justify-center shadow">
+                      ✓
+                    </span>
+                  )}
+                </span>
+                {/* Name label below the circle */}
+                <span className="mt-1 text-[9px] font-mono text-cream/75 text-center leading-tight truncate w-full px-0.5 select-none">
+                  {item.name}
+                </span>
               </span>
             </button>
           );
